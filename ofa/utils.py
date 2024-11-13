@@ -7,7 +7,7 @@ import os
 import logging
 from transformers import PreTrainedTokenizer
 from collections import OrderedDict
-
+from tqdm import tqdm
 
 BPE_WHITESPACE = "Ġ"
 XLMR_WHITESPACE = "▁"
@@ -403,3 +403,77 @@ def perform_factorize(source_matrix, keep_dim=100):
         raise ValueError("Cannot perform the factorization!")
     else:
         return primitive_embeddings, lower_coordinates
+
+def print_subword_to_word_mapping_statistics(subword_to_word_mapping: dict, not_covered_subwords: set):
+    '''
+    :param subword_to_word_mapping: subword_to_word_mapping dictionary
+    :param not_covered_subwords: set of subwords that are not covered by the word embeddings
+
+    Print some statistics about the subword to word mapping
+    '''
+    print("===Subword to Word Mapping Statistics===")
+    # Print the coverage
+    print(f"Matched Subword Token Count: {len(subword_to_word_mapping)}")
+    print(f"Unmatched Subword Token Count: {len(not_covered_subwords)}")
+    print("Coverage: ", f"{round(100*len(subword_to_word_mapping) / (len(subword_to_word_mapping) + len(not_covered_subwords)), ndigits=2)}%")
+
+    # Print the number of words per subword
+    percentiles = [0, 25, 50, 75, 90, 95, 99, 100]
+    counts_per_percentile = np.percentile([len(v) for v in subword_to_word_mapping.values()], percentiles)
+    dict_counts_per_percentile = dict(zip(percentiles, counts_per_percentile))
+    # Print with percentage sign
+    print("# of Subword - Word match percentiles: ", {f"{k}%": int(v) for k, v in dict_counts_per_percentile.items()})
+
+
+def get_subword_to_word_mappings(tokenizer, model: WordEmbedding, multilingual=True, languages_considered=None, max_n_word_vectors=None):
+    """
+    :param tokenizer: the pre-trained tokenizer
+    :param model: the embeddings
+    :param multilingual: whether the multilingual embedding is used, if yes, we should remove the iso-codes
+    :param languages_considered: the set of the languages that the tokenizer is trained on (or needs to be considered)
+    :param max_n_word_vectors: maximum number of vocabulary to be considered
+    :return: subword-to-word mappings and not covered subwords
+    """
+    words = model.get_words()
+
+    if max_n_word_vectors is None:
+        max_n_word_vectors = len(words)
+
+    subword_to_word_mapping = {}
+    not_covered_subwords = set()
+    embs = {subword_id: [] for subword_id in tokenizer.get_vocab().values()}
+
+    for i, word in tqdm(enumerate(words[:max_n_word_vectors]), desc="Matching subwords and words", total=max_n_word_vectors):
+        if multilingual:
+            if len(word) > 4 and word[3] == ':':
+                assert len(word.split(':')) == 2
+            else:
+                word = f"eng:{word}"
+            lang, word = word[:3], word[4:]
+            word_ori = word
+            word = word.replace('$', ' ')
+            if languages_considered is not None:
+                if lang not in languages_considered:
+                    continue
+
+        for tokenized in [
+            tokenizer.encode(word, add_special_tokens=False),
+            tokenizer.encode(' ' + word, add_special_tokens=False),
+            tokenizer.encode(f"{word[1].upper() + word[2:]}", add_special_tokens=False) if multilingual and word_ori[0] == '$' else '',
+            tokenizer.encode(f" {word[0].upper() + word[1:]}", add_special_tokens=False) if multilingual and word_ori[0] != '$' else '',
+        ]:
+            for subword_id in set(tokenized):
+                embs[subword_id].append(i)
+
+    for subword_id, word_indices in embs.items():
+        if word_indices:
+            subword_to_word_mapping[subword_id] = word_indices
+        else:
+            not_covered_subwords.add(subword_id)
+
+    # remove the duplicated cases in sources (NOTE: Understand why this happens)
+    subword_to_word_mapping = {k: list(set(v)) for k, v in subword_to_word_mapping.items()}
+
+    print_subword_to_word_mapping_statistics(subword_to_word_mapping, not_covered_subwords)
+    
+    return subword_to_word_mapping, not_covered_subwords

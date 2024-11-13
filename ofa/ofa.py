@@ -1,6 +1,21 @@
-from utils import *
+from ofa.utils import (
+    get_overlapping_tokens,
+    get_subword_to_word_mappings,
+    perform_factorize,
+    create_target_embeddings,
+    WordEmbedding
+)
+
+from setformer.utils import (
+    create_mapping_dataset,
+    calculate_target_coord_matrix
+)
+
+from ofa.train_setformer import train_setformer
+
 import os
 import argparse
+import numpy as np
 from gensim.models import KeyedVectors
 from transformers import AutoModelForMaskedLM, AutoTokenizer
 
@@ -29,109 +44,111 @@ def run_ofa(args, multilingual_embeddings, source_tokenizer, target_tokenizer, s
     print(f"Source language set: {source_language_set}")
     print(f"Target language set: {target_language_set}")
 
-    print("Constructing the source-language subword embeddings ...")
-    source_subword_embeddings, source_subword_sources, not_covered_source_subwords = \
-        get_subword_embeddings_in_word_embedding_space(
-            source_tokenizer,
-            multilingual_embeddings,
-            max_n_word_vectors=args.max_n_word_vectors,
-            languages_considered=source_language_set,
-            return_not_covered_set=True
-        )
-    # source_subword_sources stores the subwords from the source language
-    print(f"Coverage: {len(source_subword_sources) / (len(source_subword_sources) + len(not_covered_source_subwords))}")
+    # Get the source subword to word mapping
+    source_subword_to_word_mapping, source_not_covered_subwords = get_subword_to_word_mappings(
+        tokenizer=source_tokenizer,
+        model=multilingual_embeddings
+    )
 
-    print("Constructing the target-language subword embeddings ...")
-    target_subword_embeddings, target_subword_sources, not_covered_target_subwords = \
-        get_subword_embeddings_in_word_embedding_space(
-            target_tokenizer,
-            multilingual_embeddings,
-            max_n_word_vectors=args.max_n_word_vectors,
-            languages_considered=target_language_set,
-            return_not_covered_set=True
-        )
-    print(f"Coverage: {len(target_subword_sources) / (len(target_subword_sources) + len(not_covered_target_subwords))}")
+    # Get the target subword to word mapping
+    target_subword_to_word_mapping, target_not_covered_subwords = get_subword_to_word_mappings(
+        tokenizer=source_tokenizer,
+        model=multilingual_embeddings
+    )
 
-    # run multiple dim in one script
-    keep_dim_list = eval(args.keep_dim)
-    for dim in keep_dim_list:
-        if dim == source_embeddings.shape[1]:
-            factorize = False
-        elif dim < source_embeddings.shape[1]:
-            factorize = True
+    if args.keep_dim == source_embeddings.shape[1]:
+        factorize = False
+    elif args.keep_dim < source_embeddings.shape[1]:
+        factorize = True
+    else:
+        raise ValueError("The keep_dim must be smaller than the original embedding dim")
+    
+    print(f"Keep dim is {args.keep_dim} and factorize is {str(factorize)}")
+    
+    # factorize the source-language PLM subword embeddings
+    if factorize:
+        primitive_embeddings, lower_coordinates = perform_factorize(source_embeddings, keep_dim=args.keep_dim)
+    else:
+        lower_coordinates = source_embeddings
+
+    # Create the dataset for Setformer training
+    train_set, val_set, prediction_set = create_mapping_dataset(source_subword_to_word_mapping, 
+                                                        lower_coordinates,
+                                                        target_subword_to_word_mapping,
+                                                        multilingual_embeddings)
+
+    # Train the setformer model to learn the transformation from Word Vector Space to Subword Vector Space
+    setformer_model = train_setformer(setformer_config_yaml='setformer_config.yaml',
+                                      multilingual_embeddings=multilingual_embeddings,
+                                      train_set=train_set,
+                                      val_set=val_set)
+
+    overlapping_token_mapping = get_overlapping_tokens(target_tokenizer, source_tokenizer, fuzzy_search=True)
+
+    # all zero target subword PLM embedding matrix (later for each embedding we will not let be a zero vector)
+    target_matrix = np.zeros((len(target_tokenizer), lower_coordinates.shape[1]), dtype=lower_coordinates.dtype)
+
+    # Copy embeddings for overlapping tokens
+    overlapping_tokens = {}
+    additional_tokens = None
+
+    for overlapping_token, (target_vocab_idx, source_vocab_idx) in overlapping_token_mapping.items():
+
+        overlapping_tokens[overlapping_token] = target_vocab_idx
+        target_matrix[target_vocab_idx] = lower_coordinates[source_vocab_idx]
+
+    print(f"Num overlapping tokens: {len(overlapping_tokens)}")
+    # the subword tokens that need to be initialized
+    additional_tokens = {token: idx for token, idx in target_tokenizer.get_vocab().items()
+                            if token not in overlapping_tokens}
+    print(f"Num additional tokens: {len(additional_tokens)}")
+    assert len(overlapping_tokens) + len(additional_tokens) == len(target_tokenizer)
+
+    final_target_coordinates_matrix = calculate_target_coord_matrix(setformer_model,
+                                                                    prediction_set,
+                                                                    target_matrix)
+    # final_target_matrix, not_found, found = create_target_embeddings(
+    #     source_subword_embeddings,
+    #     target_subword_embeddings,
+    #     source_tokenizer,
+    #     target_tokenizer,
+    #     source_matrix.copy(),
+    #     target_matrix.copy(),
+    #     overlapping_tokens,
+    #     additional_tokens,
+    #     neighbors=args.neighbors,
+    #     temperature=args.temperature,
+    # )
+
+    if args.do_save:
+        # roberta_eng_{keep_dim}
+        # xlm_all_{keep_dim}
+        model_name = ''
+        if args.source_model_name == 'xlm-roberta-base':
+            model_name += 'xlm_'
+        elif args.source_model_name == 'roberta-base':
+            model_name += 'roberta_'
         else:
-            raise ValueError("The keep_dim must be smaller than the original embedding dim")
-        print(f"Keep dim is {dim} and factorize is {str(factorize)}")
-        # factorize the source-language PLM subword embeddings
+            raise ValueError("Models other than xlm-r or roberta are not considered!")
+
+        if source_language_set is None:
+            model_name += 'all_'
+        elif len(source_language_set) == 1 and 'eng' in source_language_set:
+            model_name += 'eng_'
+        else:
+            model_name += 'unk_'
+
+        model_name += f"{args.keep_dim}"
+
+        model_path = args.save_path + model_name
+        if not os.path.exists(model_path):
+            os.makedirs(model_path)
+
+        np.save(f"{model_path}/target_matrix.npy", final_target_coordinates_matrix)
+
         if factorize:
-            primitive_embeddings, lower_coordinates = perform_factorize(source_embeddings, keep_dim=dim)
-            source_matrix = lower_coordinates
-        else:
-            source_matrix = source_embeddings
-
-        overlapping_token_mapping = get_overlapping_tokens(target_tokenizer, source_tokenizer, fuzzy_search=True)
-
-        # all zero target subword PLM embedding matrix (later for each embedding we will not let be a zero vector)
-        target_matrix = np.zeros((len(target_tokenizer), source_matrix.shape[1]), dtype=source_matrix.dtype)
-
-        # Copy embeddings for overlapping tokens
-        overlapping_tokens = {}
-        additional_tokens = None
-
-        for overlapping_token, (target_vocab_idx, source_vocab_idx) in overlapping_token_mapping.items():
-
-            overlapping_tokens[overlapping_token] = target_vocab_idx
-            target_matrix[target_vocab_idx] = source_matrix[source_vocab_idx]
-
-        print(f"Num overlapping tokens: {len(overlapping_tokens)}")
-        # the subword tokens that need to be initialized
-        additional_tokens = {token: idx for token, idx in target_tokenizer.get_vocab().items()
-                             if token not in overlapping_tokens}
-        print(f"Num additional tokens: {len(additional_tokens)}")
-        assert len(overlapping_tokens) + len(additional_tokens) == len(target_tokenizer)
-
-        final_target_matrix, not_found, found = create_target_embeddings(
-            source_subword_embeddings,
-            target_subword_embeddings,
-            source_tokenizer,
-            target_tokenizer,
-            source_matrix.copy(),
-            target_matrix.copy(),
-            overlapping_tokens,
-            additional_tokens,
-            neighbors=args.neighbors,
-            temperature=args.temperature,
-        )
-
-        if args.do_save:
-            # roberta_eng_{keep_dim}
-            # xlm_all_{keep_dim}
-            model_name = ''
-            if args.source_model_name == 'xlm-roberta-base':
-                model_name += 'xlm_'
-            elif args.source_model_name == 'roberta-base':
-                model_name += 'roberta_'
-            else:
-                raise ValueError("Models other than xlm-r or roberta are not considered!")
-
-            if source_language_set is None:
-                model_name += 'all_'
-            elif len(source_language_set) == 1 and 'eng' in source_language_set:
-                model_name += 'eng_'
-            else:
-                model_name += 'unk_'
-
-            model_name += f"{dim}"
-
-            model_path = args.save_path + model_name
-            if not os.path.exists(model_path):
-                os.makedirs(model_path)
-
-            np.save(f"{model_path}/target_matrix.npy", final_target_matrix)
-
-            if factorize:
-                np.save(f"{model_path}/primitive_embeddings.npy", primitive_embeddings)
-                np.save(f"{model_path}/source_matrix.npy", source_matrix)
+            np.save(f"{model_path}/primitive_embeddings.npy", primitive_embeddings)
+            np.save(f"{model_path}/source_matrix.npy", lower_coordinates)
 
 
 def main():
@@ -143,8 +160,8 @@ def main():
     parser.add_argument('--num_epochs', type=int, default=10, help='multilingual embedding params')
     parser.add_argument('--number_of_languages', type=int, default=50, help='multilingual embedding params')
     parser.add_argument('--embedding_path', type=str,
-                        default='/mounts/data/proj/yihong/newhome/ConceptNetwork/network_related/',
-                        help='multilingual embedding params')
+                        default='/Users/eno/Documents/my-repos/smarter-ofa/data/',
+                        help='multilingual embedding params') # DELETE THE PATH
 
     # source model related
     parser.add_argument('--source_model_name', type=str, default='xlm-roberta-base', help='source model params')
@@ -160,20 +177,20 @@ def main():
     parser.add_argument('--target_language_set', type=str, default='None', help='initializing algorithm params')
 
     # factorize related
-    parser.add_argument('--keep_dim', type=str, default='[768]', help='factorize params')
     parser.add_argument('--factorize', type=bool_flag, default=True, help='factorize params')
+    parser.add_argument('--keep_dim', type=int, default=100, help="if factorize what is the D' params")
 
     # save related
     parser.add_argument('--do_save', type=bool_flag, default=True)
     parser.add_argument('--save_path', type=str,
-                        default='/mounts/data/proj/yihong/newhome/OFA/stored_factorization/updated/')
+                        default='/Users/eno/Documents/my-repos/smarter-ofa/outputs') # DELETE THE PATH
 
     args = parser.parse_args()
 
     # loading multilingual embeddings
     embedding_path = args.embedding_path + \
-                     f"expandednet_vectors_minlang_" \
-                     f"{args.number_of_languages}_{args.emb_dim}_{args.num_epochs}_updated.wv"
+                     f"colexnet_vectors_minlang_" \
+                     f"{args.number_of_languages}_{args.emb_dim}_{args.num_epochs}_updated.wv" # DELETE THE PATH
     loaded_n2v = KeyedVectors.load(embedding_path)
     multilingual_embeddings = WordEmbedding(loaded_n2v)
 
