@@ -11,7 +11,7 @@ from setformer.utils import (
     calculate_target_coord_matrix
 )
 
-from ofa.train_setformer import train_setformer
+from setformer.train_setformer import train_setformer
 
 import os
 import argparse
@@ -74,11 +74,10 @@ def run_ofa(args, multilingual_embeddings, source_tokenizer, target_tokenizer, s
     # Create the dataset for Setformer training
     train_set, val_set, prediction_set = create_mapping_dataset(source_subword_to_word_mapping, 
                                                         lower_coordinates,
-                                                        target_subword_to_word_mapping,
-                                                        multilingual_embeddings)
+                                                        target_subword_to_word_mapping)
 
     # Train the setformer model to learn the transformation from Word Vector Space to Subword Vector Space
-    setformer_model = train_setformer(setformer_config_yaml='setformer_config.yaml',
+    setformer_model = train_setformer(setformer_config_yaml='configs/setformer_config.yaml',
                                       multilingual_embeddings=multilingual_embeddings,
                                       train_set=train_set,
                                       val_set=val_set)

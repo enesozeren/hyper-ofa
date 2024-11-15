@@ -1,0 +1,26 @@
+model_hps:
+  num_layers: 16             # Number of transformer layers
+  emb_dim: 200              # Dimension of token embeddings
+  num_heads: 8              # Number of attention heads
+  dim_feedforward: 2048     # Dimension of feed-forward layers
+  dropout: 0.1              # Dropout rate
+  output_dim: 100           # Output dimension of the model
+  max_context_size: 256     # Max Context size for the set transformer
+  padding_idx: 3610267           # PAD token idx
+  cls_idx: 3610268               # CLS token idx
+
+training_hps:
+  batch_size: 128            # Batch size for training
+  lr: 0.0001     # Initial learning rate
+  epochs: 3            # number of epochs
+
+logging:
+  checkpoint_dir: outputs/checkpoints # Directory to save checkpoints
+  save_best_only: true      # Save only the best-performing checkpoint
+
+# device:
+#   use_gpu: true             # Whether to use GPU
+#   gpu_ids: [0]              # List of GPU IDs to use
+
+notes: >
+  Set Former training hyperparameters

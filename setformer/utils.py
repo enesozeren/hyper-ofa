@@ -15,7 +15,7 @@ def create_word_embedding_matrix(multilingual_embeddings: WordEmbedding):
     '''
     :param multilingual_embeddings: WordEmbedding object
     :return: embedding matrix with the shape of (len(words), embedding_dim)
-    Note: The last row is reserved for the CLS token
+    Note: The last -1 row is reserved for PAD token and the last row is reserved for the CLS token
     '''
     # Get the words
     words = multilingual_embeddings.get_words()
@@ -33,18 +33,19 @@ def create_word_embedding_matrix(multilingual_embeddings: WordEmbedding):
     for word, word_id in word_indices.items():
         embedding_matrix[word_id] = word_vectors[word_id]
     
-    # Add CLS token embedding as the last row
-    cls_embedding = torch.rand(1, word_vectors.shape[1])
-    embedding_matrix = torch.cat((embedding_matrix, cls_embedding), dim=0)
+    # Add padding token embedding as the second last row and the CLS token embedding as the last row
+    padding_embedding = torch.zeros(1, word_vectors.shape[1])
+    cls_embedding = torch.zeros(1, word_vectors.shape[1])
+    embedding_matrix = torch.cat((embedding_matrix, padding_embedding, cls_embedding), dim=0)
 
     return embedding_matrix
 
-def create_input_target_pairs(subword_to_word_mapping, lower_coordinates, cls_token_id):
+# The dataset size can be increased by generating shuffled word indices which has a larger size than the context size
+def create_input_target_pairs(subword_to_word_mapping, lower_coordinates):
     '''
     Create input-target pairs for the SetFormer model
     :param subword_to_word_mapping: A dictionary that maps subword idx to word indices
     :param lower_coordinates: The lower-dimensional coordinates of the subwords, if none, the target will be None
-    :param cls_token_id: The index of the CLS token in the embedding matrix
     '''
     
     dataset = {}
@@ -54,9 +55,9 @@ def create_input_target_pairs(subword_to_word_mapping, lower_coordinates, cls_to
         # Shuffle the word indices 
         np.random.shuffle(word_idxs)
         # Truncate inputs to the context size
-        word_idxs = word_idxs[:MAX_CONTEXT_SIZE-1] # -1 for the CLS token
-        # Add the CLS token to the input
-        inputs.append([cls_token_id] + word_idxs)
+        word_idxs = word_idxs[:MAX_CONTEXT_SIZE-1] # -1 for the CLS token to be added in collate_fn
+
+        inputs.append(word_idxs)
         if lower_coordinates is not None:
             targets.append(lower_coordinates[subword_idx])
         else:
@@ -87,22 +88,17 @@ def split_train_val_set(dataset, val_ratio=0.1, seed=42):
     return train_set, val_set
 
 def create_mapping_dataset(source_subword_to_word_mapping, lower_coordinates,
-                           target_subword_to_word_mapping,
-                           multilingual_embeddings: WordEmbedding):
-    
-    cls_token_id = len(multilingual_embeddings.get_words()) # The last row is the CLS token
-    
+                           target_subword_to_word_mapping):
+
     train_set = create_input_target_pairs(subword_to_word_mapping=source_subword_to_word_mapping, 
-                                          lower_coordinates=lower_coordinates, 
-                                          cls_token_id=cls_token_id)
+                                          lower_coordinates=lower_coordinates)
     train_set, val_set = split_train_val_set(train_set, val_ratio=0.1)
     
     train_set = OFADataset(train_set['inputs'], train_set['targets'])
     val_set = OFADataset(val_set['inputs'], val_set['targets'])
 
     prediction_set = create_input_target_pairs(subword_to_word_mapping=target_subword_to_word_mapping, 
-                                                lower_coordinates=None, 
-                                                cls_token_id=cls_token_id)
+                                                lower_coordinates=None)
 
     return train_set, val_set, prediction_set
 
