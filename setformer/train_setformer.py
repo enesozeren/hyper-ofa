@@ -87,7 +87,8 @@ def train_setformer(setformer_config_dict: dict,
                           output_dim=setformer_config_dict['model_hps']['output_dim'],
                           context_size=setformer_config_dict['model_hps']['max_context_size'],
                           dropout=setformer_config_dict['model_hps']['dropout'],
-                          word_vector_emb=word_vector_emb_matrix)
+                          word_vector_emb=word_vector_emb_matrix,
+                          padding_idx=setformer_config_dict['model_hps']['padding_idx'])
     
     # Train the model
     train_process(setformer, setformer_config_dict, train_loader, val_loader)

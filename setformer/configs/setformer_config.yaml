@@ -1,5 +1,5 @@
 model_hps:
-  num_layers: 4             # Number of transformer layers
+  num_layers: 2             # Number of transformer layers
   emb_dim: 200              # Dimension of token embeddings
   num_heads: 8              # Number of attention heads
   dim_feedforward: 128     # Dimension of feed-forward layers
