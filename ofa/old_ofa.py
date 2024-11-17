@@ -159,7 +159,7 @@ def main():
     parser.add_argument('--num_epochs', type=int, default=10, help='multilingual embedding params')
     parser.add_argument('--number_of_languages', type=int, default=50, help='multilingual embedding params')
     parser.add_argument('--embedding_path', type=str,
-                        default='/Users/eno/Documents/my-repos/smarter-ofa/data/',
+                        default='data/colexnet_vectors_minlang_50_200_10_updated.wv',
                         help='multilingual embedding params') # DELETE THE PATH
 
     # source model related
@@ -187,10 +187,10 @@ def main():
     args = parser.parse_args()
 
     # loading multilingual embeddings
-    embedding_path = args.embedding_path + \
-                     f"colexnet_vectors_minlang_" \
-                     f"{args.number_of_languages}_{args.emb_dim}_{args.num_epochs}_updated.wv" # DELETE THE PATH
-    loaded_n2v = KeyedVectors.load(embedding_path)
+    # embedding_path = args.embedding_path + \
+    #                  f"colexnet_vectors_minlang_" \
+    #                  f"{args.number_of_languages}_{args.emb_dim}_{args.num_epochs}_updated.wv" # DELETE THE PATH
+    loaded_n2v = KeyedVectors.load(args.embedding_path)
     multilingual_embeddings = WordEmbedding(loaded_n2v)
 
     # loading tokenizers and source-model embeddings

@@ -21,7 +21,8 @@ class SetFormer(nn.Module):
         self.word_vector_emb_layer = nn.Embedding.from_pretrained(embeddings=word_vector_emb, freeze=True)
         # An Encoder block to process the input
         encoder_layer = nn.TransformerEncoderLayer(d_model=emb_dim, nhead=num_heads, 
-                                                   dim_feedforward=dim_feedforward ,dropout=dropout)
+                                                   dim_feedforward=dim_feedforward, 
+                                                   dropout=dropout, batch_first=True)
         self.encoder_block = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
         # Output layer for the CLS token
         self.output_layer = nn.Linear(emb_dim, output_dim)
@@ -32,8 +33,8 @@ class SetFormer(nn.Module):
         # x is a tensor of shape (batch_size, context_size)
         x = self.word_vector_emb_layer(x) # (batch_size, context_size, emb_dim)
         x = self.encoder_block(x) # (batch_size, context_size, emb_dim)
-        # Get the CLS token
-        x = x[:, -1, :]
+        # Get the CLS token in the first dimension
+        x = x[:, 0, :]
         # Feed the CLS token to the output layer
         x = self.output_layer(x) # (batch_size, output_dim)
 

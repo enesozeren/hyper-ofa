@@ -1,98 +1,93 @@
 import torch
 from torch.utils.data import DataLoader
+import os
+from datetime import datetime
 import yaml
-from tqdm import tqdm
+from functools import partial
+
+import pytorch_lightning as pl
+from pytorch_lightning.loggers import CSVLogger
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 from ofa.utils import WordEmbedding
-from setformer.dataset import collate_fn
+from setformer.dataset import custom_collate_fn
 from setformer.setformer import SetFormer
+from setformer.utils import create_word_embedding_matrix
+from setformer.lightning_modules import SetFormerLightning, LiveLossPlotCallback
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def train_process(model: SetFormer, model_config_dict: dict, train_loader, val_loader):
 
-    # Log the model parameter size and configs
-    print(f"Totla model parameter size: {sum(p.numel() for p in model.parameters())}")
-    print(f"Model parameter size without word vectors which is FROZEN: {sum(p.numel() for p in model.parameters() if p.requires_grad)}")
-    print(f"Model configs: {model_config_dict}")
+    # Create a sub file that has current timestamp as file name
+    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    model_config_dict['logging']['log_dir'] = f"{model_config_dict['logging']['log_dir']}/{current_time}"
+    os.makedirs(model_config_dict['logging']['log_dir'], exist_ok=True)
     
-    # Init optimizer
-    optimizer = torch.optim.Adam(model.parameters(), lr=model_config_dict['training_hps']['lr'])
+    # Save the model config
+    with open(f"{model_config_dict['logging']['log_dir']}/model_config.yaml", 'w') as file:
+        yaml.dump(model_config_dict, file)
 
-    # Init cos similiarity
-    cosine_similarity = torch.nn.CosineSimilarity(dim=1)
+    # Logger
+    logger = CSVLogger(save_dir=model_config_dict['logging']['log_dir'], name=current_time)
 
-    # Move the model to the device
-    model.to(device)
+    # Checkpoint callback
+    checkpoint_callback = ModelCheckpoint(
+        dirpath=f"{model_config_dict['logging']['log_dir']}/checkpoints",
+        filename='model-{epoch:02d}-{val_loss:.4f}',
+        save_top_k=1,
+        monitor='val_loss',
+        mode='min'
+    )
 
-    # Train the model and print loss values every epoch
-    for epoch in range(model_config_dict['training_hps']['epochs']):
-        model.train()
-        total_loss = 0
-        for i, (inputs, targets) in tqdm(enumerate(train_loader), total=len(train_loader), 
-                                         desc=f"Epoch {epoch+1}/{model_config_dict['training_hps']['epochs']}"):
-            inputs = inputs.to(device)
-            targets = targets.to(device)
-            
-            optimizer.zero_grad()
-            outputs = model(inputs)
-            loss = (1 - cosine_similarity(outputs, targets)).mean()
-            loss.backward()
-            optimizer.step()
-            
-            total_loss += loss.item()
+    # Live loss plot callback
+    live_loss_callback = LiveLossPlotCallback(
+        save_dir=f"{model_config_dict['logging']['log_dir']}/plots")
 
-            if i % 2 == 0:
-                print(f"Epoch {epoch+1}/{model_config_dict['training_hps']['epochs']}, Batch {i+1}/{len(train_loader)}, Loss: {loss.item()}")
-        
-        print(f"Epoch {epoch+1}/{model_config_dict['training_hps']['epochs']}, Loss: {total_loss / len(train_loader)}")
+    # Trainer
+    trainer = pl.Trainer(
+        max_epochs=model_config_dict['training_hps']['epochs'],
+        logger=logger,
+        callbacks=[checkpoint_callback, live_loss_callback],
+        log_every_n_steps=250,
+        accelerator='auto'  # Automatically uses GPU if available
+    )
 
-        # Evaluate the model on the validation set
-        model.eval()
-        total_loss = 0
-        with torch.no_grad():
-            for i, (inputs, targets) in enumerate(val_loader):
-                inputs = inputs.to(device)
-                targets = targets.to(device)
-                outputs = model(inputs)
-                loss = (1 - cosine_similarity(outputs, targets)).mean()
-                total_loss += loss.item()
+    # Lightning model
+    pl_model = SetFormerLightning(model, model_config_dict)
 
-                if i % 2 == 0:
-                    print(f"Epoch {epoch+1}/{model_config_dict['training_hps']['epochs']}, Batch {i+1}/{len(val_loader)}, Loss: {loss.item()}")
+    # Train
+    trainer.fit(pl_model, train_loader, val_loader)
 
-            print(f"Validation Loss: {total_loss / len(val_loader)}")
 
-    return model
-
-def train_setformer(setformer_config_yaml,
+def train_setformer(setformer_config_dict: dict,
                     multilingual_embeddings: WordEmbedding,
                     train_set,
                     val_set):
-    
-    # Get the hps in yaml file path
-    with open(setformer_config_yaml, 'r') as file:
-        setformer_config = yaml.load(file, Loader=yaml.FullLoader)
 
-    # Prepare dataloaders
-    train_loader = DataLoader(train_set, batch_size=setformer_config['training_hps']['batch_size'], 
-                              shuffle=True, collate_fn=collate_fn)
-    val_loader = DataLoader(val_set, batch_size=setformer_config['training_hps']['batch_size'], 
-                            shuffle=False, collate_fn=collate_fn)
+    # Pre-fill extra arguments
+    collate_fn = partial(custom_collate_fn, 
+                         pad_idx=setformer_config_dict['model_hps']['cls_idx'], 
+                         cls_idx=setformer_config_dict['model_hps']['padding_idx'])
+    # Prepare dataloaders    
+    train_loader = DataLoader(train_set, batch_size=setformer_config_dict['training_hps']['batch_size'], 
+                              shuffle=True, collate_fn=collate_fn, num_workers=setformer_config_dict['training_hps']['num_workers'],
+                              persistent_workers=True)
+    val_loader = DataLoader(val_set, batch_size=setformer_config_dict['training_hps']['batch_size'], 
+                            shuffle=False, collate_fn=collate_fn, num_workers=setformer_config_dict['training_hps']['num_workers'],
+                            persistent_workers=True)
+
+    # Convert the word vector embedding to tensor
+    word_vector_emb_matrix = create_word_embedding_matrix(multilingual_embeddings)
 
     # Load the SetFormer model
-    setformer = SetFormer(emb_dim=setformer_config['model_hps']['emb_dim'],
-                          num_heads=setformer_config['model_hps']['num_heads'],
-                          num_layers=setformer_config['model_hps']['num_layers'],
-                          dim_feedforward=setformer_config['model_hps']['dim_feedforward'],
-                          output_dim=setformer_config['model_hps']['output_dim'],
-                          context_size=setformer_config['model_hps']['max_context_size'],
-                          dropout=setformer_config['model_hps']['dropout'],
-                          word_vector_emb=multilingual_embeddings)
+    setformer = SetFormer(emb_dim=setformer_config_dict['model_hps']['emb_dim'],
+                          num_heads=setformer_config_dict['model_hps']['num_heads'],
+                          num_layers=setformer_config_dict['model_hps']['num_layers'],
+                          dim_feedforward=setformer_config_dict['model_hps']['dim_feedforward'],
+                          output_dim=setformer_config_dict['model_hps']['output_dim'],
+                          context_size=setformer_config_dict['model_hps']['max_context_size'],
+                          dropout=setformer_config_dict['model_hps']['dropout'],
+                          word_vector_emb=word_vector_emb_matrix)
     
     # Train the model
-    setformer = train_process(setformer, setformer_config, train_loader, val_loader)
-
-    # Save the model checkpoint
-    save_file_name = f"{setformer_config['logging']['checkpoint_dir']}/{setformer_config_yaml}_model.pth"
-    torch.save(setformer.state_dict(), save_file_name)
+    train_process(setformer, setformer_config_dict, train_loader, val_loader)

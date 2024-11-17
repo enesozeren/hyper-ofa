@@ -1,9 +1,6 @@
 import torch
 from torch.utils.data import Dataset
-
-# HPs - CLEAN
-PAD_IDX = 3610267
-CLS_IDX = 3610268
+import numpy as np
 
 class OFADataset(Dataset):
     def __init__(self, inputs, targets):
@@ -15,8 +12,9 @@ class OFADataset(Dataset):
 
     def __getitem__(self, idx):
         return self.inputs[idx], self.targets[idx]
-    
-def collate_fn(batch):
+
+
+def custom_collate_fn(batch, cls_idx, pad_idx):
     '''
     Collate function for the dataloader
     Add CLS token to the beginning of the input
@@ -27,8 +25,8 @@ def collate_fn(batch):
     batch_size = len(targets)
     
     # Add CLS token to the beginning of the input
-    padded_inputs = torch.nn.utils.rnn.pad_sequence([torch.cat([torch.tensor([CLS_IDX]), torch.tensor(i)]) for i in inputs], 
-                                                    batch_first=True, padding_value=PAD_IDX)
-    targets = torch.tensor(targets, dtype=torch.float32).view(batch_size, targets[0].shape[0])
+    padded_inputs = torch.nn.utils.rnn.pad_sequence([torch.cat([torch.tensor([cls_idx]), torch.tensor(i)]) for i in inputs], 
+                                                    batch_first=True, padding_value=pad_idx)
+    targets = torch.tensor(np.array(targets), dtype=torch.float32).view(batch_size, targets[0].shape[0])
 
     return padded_inputs, targets

@@ -1,3 +1,6 @@
 .DS_Store
 __pycache__
-data/
+colexnet_vectors/
+outputs/
+notebooks/
+setformer/training_logs/*

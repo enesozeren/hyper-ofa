@@ -1,14 +1,10 @@
-from ofa.utils import (
-    WordEmbedding
-)
-
-from setformer.dataset import OFADataset
-
 import torch
 import numpy as np
+import yaml
 
-# HPs - CLEAN
-MAX_CONTEXT_SIZE = 256
+from ofa.utils import WordEmbedding
+from setformer.dataset import OFADataset
+
 
 # Create embedding matrix from the ColexNet embeddings (multilingual_embeddings)
 def create_word_embedding_matrix(multilingual_embeddings: WordEmbedding):
@@ -27,7 +23,9 @@ def create_word_embedding_matrix(multilingual_embeddings: WordEmbedding):
     assert max(word_indices.values()) == len(words) - 1, "Indices do not end at len(words) - 1 in WordEmbedding object"
     
     # Get the word vectors
-    word_vectors = torch.tensor([multilingual_embeddings.get_word_vector(word) for word in words])
+    word_vectors_np = np.array([multilingual_embeddings.get_word_vector(word) for word in words])
+    word_vectors = torch.tensor(word_vectors_np)
+    
     # Create the embedding matrix
     embedding_matrix = torch.zeros((len(words), word_vectors.shape[1]))
     for word, word_id in word_indices.items():
@@ -41,11 +39,11 @@ def create_word_embedding_matrix(multilingual_embeddings: WordEmbedding):
     return embedding_matrix
 
 # The dataset size can be increased by generating shuffled word indices which has a larger size than the context size
-def create_input_target_pairs(subword_to_word_mapping, lower_coordinates):
+def create_input_target_pairs(subword_to_word_mapping, source_matrix, max_context_size: int):
     '''
     Create input-target pairs for the SetFormer model
     :param subword_to_word_mapping: A dictionary that maps subword idx to word indices
-    :param lower_coordinates: The lower-dimensional coordinates of the subwords, if none, the target will be None
+    :param source_matrix: The source embedding matrix
     '''
     
     dataset = {}
@@ -55,11 +53,11 @@ def create_input_target_pairs(subword_to_word_mapping, lower_coordinates):
         # Shuffle the word indices 
         np.random.shuffle(word_idxs)
         # Truncate inputs to the context size
-        word_idxs = word_idxs[:MAX_CONTEXT_SIZE-1] # -1 for the CLS token to be added in collate_fn
-
+        word_idxs = word_idxs[:max_context_size-1] # -1 for the CLS token to be added in collate_fn
         inputs.append(word_idxs)
-        if lower_coordinates is not None:
-            targets.append(lower_coordinates[subword_idx])
+
+        if source_matrix is not None:
+            targets.append(source_matrix[subword_idx])
         else:
             targets.append(None)
 
@@ -87,18 +85,24 @@ def split_train_val_set(dataset, val_ratio=0.1, seed=42):
 
     return train_set, val_set
 
-def create_mapping_dataset(source_subword_to_word_mapping, lower_coordinates,
-                           target_subword_to_word_mapping):
+def create_mapping_dataset(source_subword_to_word_mapping, source_matrix,
+                           target_subword_to_word_mapping, setformer_config_path):
+
+    # Get the model config
+    with open(setformer_config_path, 'r') as file:
+        setformer_config_dict = yaml.load(file, Loader=yaml.FullLoader)
 
     train_set = create_input_target_pairs(subword_to_word_mapping=source_subword_to_word_mapping, 
-                                          lower_coordinates=lower_coordinates)
+                                          source_matrix=source_matrix, 
+                                          max_context_size=setformer_config_dict['model_hps']['max_context_size'])
     train_set, val_set = split_train_val_set(train_set, val_ratio=0.1)
     
     train_set = OFADataset(train_set['inputs'], train_set['targets'])
     val_set = OFADataset(val_set['inputs'], val_set['targets'])
 
     prediction_set = create_input_target_pairs(subword_to_word_mapping=target_subword_to_word_mapping, 
-                                                lower_coordinates=None)
+                                                source_matrix=None,
+                                                max_context_size=setformer_config_dict['model_hps']['max_context_size'])
 
     return train_set, val_set, prediction_set
 
