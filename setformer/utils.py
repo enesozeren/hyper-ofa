@@ -38,6 +38,24 @@ def create_word_embedding_matrix(multilingual_embeddings: WordEmbedding):
 
     return embedding_matrix
 
+def get_test_source_token_ids(subword_to_word_mapping, test_set_size: int):
+    '''
+    Get the test set from the source subword_to_word_mapping
+    '''
+    # randomly select test_set_size number of subword indices from the subword_to_word_mapping keys
+    test_subword_indices = np.random.choice(list(subword_to_word_mapping.keys()), test_set_size, replace=False)
+    print(f"Test set size: {test_set_size}")
+    return test_subword_indices
+
+def remove_test_set_from_source(subword_to_word_mapping, test_set_source_token_ids):
+    '''
+    Remove the test set from the source subword_to_word_mapping
+    '''
+    for subword_idx in test_set_source_token_ids:
+        del subword_to_word_mapping[subword_idx]
+
+    return subword_to_word_mapping
+
 # The dataset size can be increased by generating shuffled word indices which has a larger size than the context size
 def create_input_target_pairs(subword_to_word_mapping, source_matrix, max_context_size: int):
     '''
@@ -80,8 +98,10 @@ def split_train_val_set(dataset, val_ratio=0.1, seed=42):
 
     train_set = {'inputs': [dataset['inputs'][i] for i in train_indices],
                  'targets': [dataset['targets'][i] for i in train_indices]}
+    print(f"Train set size: {len(train_set['inputs'])}")
     val_set = {'inputs': [dataset['inputs'][i] for i in val_indices],
                'targets': [dataset['targets'][i] for i in val_indices]}
+    print(f"Validation set size: {len(val_set['inputs'])}")
 
     return train_set, val_set
 
@@ -92,10 +112,16 @@ def create_mapping_dataset(source_subword_to_word_mapping, source_matrix,
     with open(setformer_config_path, 'r') as file:
         setformer_config_dict = yaml.load(file, Loader=yaml.FullLoader)
 
+    # Split the test set to compare learning based OFA and original OFA later
+    test_set_source_token_ids = get_test_source_token_ids(source_subword_to_word_mapping, test_set_size=3_000)
+
+    # Remove the test set from the source_subword_to_word_mapping
+    source_subword_to_word_mapping = remove_test_set_from_source(source_subword_to_word_mapping, test_set_source_token_ids)
+
     train_set = create_input_target_pairs(subword_to_word_mapping=source_subword_to_word_mapping, 
                                           source_matrix=source_matrix, 
                                           max_context_size=setformer_config_dict['model_hps']['max_context_size'])
-    train_set, val_set = split_train_val_set(train_set, val_ratio=0.1)
+    train_set, val_set = split_train_val_set(train_set, val_ratio=0.05)
     
     train_set = OFADataset(train_set['inputs'], train_set['targets'])
     val_set = OFADataset(val_set['inputs'], val_set['targets'])
@@ -104,7 +130,7 @@ def create_mapping_dataset(source_subword_to_word_mapping, source_matrix,
                                                 source_matrix=None,
                                                 max_context_size=setformer_config_dict['model_hps']['max_context_size'])
 
-    return train_set, val_set, prediction_set
+    return train_set, val_set, test_set_source_token_ids, prediction_set
 
 def calculate_target_coord_matrix(setformer_model, prediction_set, target_matrix):
     pass

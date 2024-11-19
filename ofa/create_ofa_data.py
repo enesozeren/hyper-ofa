@@ -68,10 +68,10 @@ def create_ofa_data(args, multilingual_embeddings, source_tokenizer, target_toke
         source_matrix = source_embeddings
 
     # Create the dataset for Setformer training
-    train_set, val_set, prediction_set = create_mapping_dataset(source_subword_to_word_mapping, 
-                                                                source_matrix,
-                                                                target_subword_to_word_mapping,
-                                                                args.setformer_config_path)
+    train_set, val_set, test_set_source_token_ids, prediction_set = create_mapping_dataset(source_subword_to_word_mapping, 
+                                                                                            source_matrix,
+                                                                                            target_subword_to_word_mapping,
+                                                                                            args.setformer_config_path)
     
     # Create the output directory if it does not exist
     if not os.path.exists(args.ofa_data_dir):
@@ -82,6 +82,8 @@ def create_ofa_data(args, multilingual_embeddings, source_tokenizer, target_toke
         pickle.dump(train_set, f)
     with open(os.path.join(args.ofa_data_dir, 'val_set.pkl'), 'wb') as f:
         pickle.dump(val_set, f)
+    with open(os.path.join(args.ofa_data_dir, 'test_set_source_token_ids.pkl'), 'wb') as f:
+        pickle.dump(test_set_source_token_ids, f)
     with open(os.path.join(args.ofa_data_dir, 'prediction_set.pkl'), 'wb') as f:
         pickle.dump(prediction_set, f)
 
