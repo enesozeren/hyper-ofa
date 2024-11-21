@@ -103,7 +103,7 @@ def run_ofa(args, multilingual_embeddings, source_tokenizer, source_embeddings):
     with open(os.path.join(args.output_path, 'cos_similarities_list.pkl'), 'wb') as f:
         pickle.dump(cos_similarities_list, f)
     # Save the numb of tokens in the test set and avg_cos_similarity
-    with open(os.path.join(args.output_path, 'test_set_info.txt'), 'w') as f:
+    with open(os.path.join(args.output_path, 'test_set_results.txt'), 'w') as f:
         f.write(f"Number of tokens in the test set: {len(test_source_token_ids)}\n")
         f.write(f"Average cosine similarity on the test set: {avg_cos_similarity}\n")
     

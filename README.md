@@ -1,3 +1,15 @@
+# WISER - OFA
+
+To train setformer use
+
+To test setformer use
+```bash
+python ofa/test_mapping_model.py \
+--setformer_config_path setformer/configs/setformer_config.yaml \
+--test_set_path outputs/data_for_xlm-roberta-base_to_cis-lmu-glot500-base/test_set.pkl \
+--checkpoint_path setformer/training_logs/2024-11-17_23-17-59/checkpoints/model-epoch=02-val_loss=0.7805.ckpt
+```
+
 # OFA
 
 This is the repository for the pipeline of **O**ne **F**or **A**ll Framework, which aims to find **a good initialization of subword embeddings** when we want to adapt a monolingual or multilingual PLM to many languages. The framework optionally applies matrix factorization to the original PLM subword embeddings and replaces the new subword embeddings with two smaller matrices, which can largely reduce the number of parameters. Therefore, the OFA framework can boost efficient **large-scale multilingual continued pretraining**, which is especially helpful to a limited computation budget. Some of the code is based on [Glot500](https://github.com/cisnlp/Glot500), [WECHSEL](https://github.com/CPJKU/wechsel) and [FOCUS](https://github.com/konstantinjdobler/focus).  

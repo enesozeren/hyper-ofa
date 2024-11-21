@@ -114,6 +114,11 @@ def create_mapping_dataset(source_subword_to_word_mapping, source_matrix,
 
     # Split the test set to compare learning based OFA and original OFA later
     test_set_source_token_ids = get_test_source_token_ids(source_subword_to_word_mapping, test_set_size=3_000)
+    test_subword_to_word_mapping = {subword_idx: source_subword_to_word_mapping[subword_idx] for subword_idx in test_set_source_token_ids}
+    test_set = create_input_target_pairs(subword_to_word_mapping=test_subword_to_word_mapping,
+                                         source_matrix=source_matrix,
+                                         max_context_size=setformer_config_dict['model_hps']['max_context_size'])
+    test_set = OFADataset(test_set['inputs'], test_set['targets'])
 
     # Remove the test set from the source_subword_to_word_mapping
     source_subword_to_word_mapping = remove_test_set_from_source(source_subword_to_word_mapping, test_set_source_token_ids)
@@ -130,7 +135,7 @@ def create_mapping_dataset(source_subword_to_word_mapping, source_matrix,
                                                 source_matrix=None,
                                                 max_context_size=setformer_config_dict['model_hps']['max_context_size'])
 
-    return train_set, val_set, test_set_source_token_ids, prediction_set
+    return train_set, val_set, test_set, test_set_source_token_ids, prediction_set
 
 def calculate_target_coord_matrix(setformer_model, prediction_set, target_matrix):
     pass

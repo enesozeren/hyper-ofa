@@ -31,7 +31,8 @@ def bool_flag(s):
         raise argparse.ArgumentTypeError("Invalid value for a boolean flag!")
 
 
-def create_ofa_data(args, multilingual_embeddings, source_tokenizer, target_tokenizer, source_embeddings):
+def create_ofa_data(args, multilingual_embeddings, source_tokenizer, target_tokenizer, 
+                    source_embeddings, output_path: str):
 
     source_language_set = eval(args.source_language_set)
     target_language_set = eval(args.target_language_set)
@@ -68,35 +69,38 @@ def create_ofa_data(args, multilingual_embeddings, source_tokenizer, target_toke
         source_matrix = source_embeddings
 
     # Create the dataset for Setformer training
-    train_set, val_set, test_set_source_token_ids, prediction_set = create_mapping_dataset(source_subword_to_word_mapping, 
+    train_set, val_set, test_set, test_set_source_token_ids, prediction_set = create_mapping_dataset(source_subword_to_word_mapping, 
                                                                                             source_matrix,
                                                                                             target_subword_to_word_mapping,
                                                                                             args.setformer_config_path)
     
     # Create the output directory if it does not exist
-    if not os.path.exists(args.ofa_data_dir):
-        os.makedirs(args.ofa_data_dir, exist_ok=True)
+    if not os.path.exists(output_path):
+        os.makedirs(output_path, exist_ok=True)
         
     # Save the dataset to the output directory for learning the transformation from word vector space to subword vector space
-    with open(os.path.join(args.ofa_data_dir, 'train_set.pkl'), 'wb') as f:
+    with open(os.path.join(output_path, 'train_set.pkl'), 'wb') as f:
         pickle.dump(train_set, f)
-    with open(os.path.join(args.ofa_data_dir, 'val_set.pkl'), 'wb') as f:
+    with open(os.path.join(output_path, 'val_set.pkl'), 'wb') as f:
         pickle.dump(val_set, f)
-    with open(os.path.join(args.ofa_data_dir, 'test_set_source_token_ids.pkl'), 'wb') as f:
+    with open(os.path.join(output_path, 'test_set.pkl'), 'wb') as f:
+        pickle.dump(test_set, f)
+
+    with open(os.path.join(output_path, 'test_set_source_token_ids.pkl'), 'wb') as f:
         pickle.dump(test_set_source_token_ids, f)
-    with open(os.path.join(args.ofa_data_dir, 'prediction_set.pkl'), 'wb') as f:
+    with open(os.path.join(output_path, 'prediction_set.pkl'), 'wb') as f:
         pickle.dump(prediction_set, f)
 
     # Save target_not_covered_subwords to initialize them randomly later
-    with open(os.path.join(args.ofa_data_dir, 'target_not_covered_subwords.pkl'), 'wb') as f:
+    with open(os.path.join(output_path, 'target_not_covered_subwords.pkl'), 'wb') as f:
         pickle.dump(target_not_covered_subwords, f)
 
     # Save source_matrix as npy
-    np.save(os.path.join(args.ofa_data_dir, "source_matrix.npy"), source_matrix)
+    np.save(os.path.join(output_path, "source_matrix.npy"), source_matrix)
 
     # Save primitive embeddings as npy if factorized
     if factorize:
-        np.save(os.path.join(args.ofa_data_dir, 'primitive_embeddings.npy'), primitive_embeddings)
+        np.save(os.path.join(output_path, 'primitive_embeddings.npy'), primitive_embeddings)
 
 
 def main():
@@ -121,7 +125,7 @@ def main():
     parser.add_argument('--keep_dim', type=int, default=100, help="if factorize what is the D' params")
 
     # save related
-    parser.add_argument('--ofa_data_dir', type=str, default='outputs/ofa_data', 
+    parser.add_argument('--output_dir', type=str, default='outputs', 
                         help='output directory to save the ofa dataset')
 
     # setformer model hp related
@@ -129,6 +133,8 @@ def main():
                         help='setformer model hyperparameters config path')
 
     args = parser.parse_args()
+
+    output_path = f'{args.output_dir}/data_for_{args.source_model_name.replace("/", "-")}_to_{args.target_model_name.replace("/", "-")}'
 
     loaded_n2v = KeyedVectors.load(args.word_vec_embedding_path)
     multilingual_embeddings = WordEmbedding(loaded_n2v)
@@ -146,8 +152,9 @@ def main():
     print(f"Number of tokens in target tokenizer: {len(target_tokenizer)}")
 
     create_ofa_data(args, multilingual_embeddings=multilingual_embeddings,
-            source_tokenizer=source_tokenizer, target_tokenizer=target_tokenizer,
-            source_embeddings=source_embeddings)
+                    source_tokenizer=source_tokenizer, target_tokenizer=target_tokenizer,
+                    source_embeddings=source_embeddings, 
+                    output_path=output_path)
 
 
 if __name__ == "__main__":

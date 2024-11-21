@@ -2,7 +2,7 @@ from ofa.utils import (
     WordEmbedding
 )
 
-from setformer.train_setformer import train_setformer
+from setformer.train import train_setformer
 
 import os
 import argparse
@@ -43,7 +43,8 @@ def main():
                         default='colexnet_vectors/colexnet_vectors_minlang_50_200_10_updated.wv',
                         help='multilingual word vector embeddings') # DELETE THE PATH
     parser.add_argument('--keep_dim', type=int, default=100, help="if factorized what is the D' params")
-    parser.add_argument('--ofa_data_dir', type=str, default='outputs/ofa_data', 
+    parser.add_argument('--ofa_data_dir', type=str, 
+                        default='outputs/data_for_xlm-roberta-base_to_cis-lmu/glot500-base', 
                         help='directory which contains ofa dataset')
     parser.add_argument('--setformer_config_path', type=str, default='setformer/configs/setformer_config.yaml',
                         help='setformer config path')

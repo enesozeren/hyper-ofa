@@ -36,6 +36,16 @@ class SetFormerLightning(pl.LightningModule):
         trainable_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         self.log_dict({'total_params': total_params, 'trainable_params': trainable_params})
 
+    def test_step(self, batch, batch_idx):
+        inputs, targets = batch
+        outputs = self.model(inputs)
+        loss = (1 - self.cosine_similarity(outputs, targets)).mean()
+        self.log('test_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
+        # Avg Cos Sim
+        avg_cos_sim = self.cosine_similarity(outputs, targets).mean()
+        self.log('avg_cos_sim', avg_cos_sim, on_step=False, on_epoch=True, prog_bar=True)
+        return loss, avg_cos_sim
+
 
 class LiveLossPlotCallback(pl.Callback):
     def __init__(self, save_dir="plots"):
