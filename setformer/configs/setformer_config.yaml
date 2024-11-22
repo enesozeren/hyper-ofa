@@ -15,7 +15,7 @@ training_hps:
   num_workers: 2            # Number of workers for data loading
 
 logging:
-  log_dir: outputs/setformer_training_logs # Directory to save checkpoints
+  log_dir: outputs/setformer_logs # Directory to save checkpoints
 
 notes: >
   Set Former training hyperparameters

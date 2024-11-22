@@ -44,7 +44,6 @@ def get_test_source_token_ids(subword_to_word_mapping, test_set_size: int):
     '''
     # randomly select test_set_size number of subword indices from the subword_to_word_mapping keys
     test_subword_indices = np.random.choice(list(subword_to_word_mapping.keys()), test_set_size, replace=False)
-    print(f"Test set size: {test_set_size}")
     return test_subword_indices
 
 def remove_test_set_from_source(subword_to_word_mapping, test_set_source_token_ids):
@@ -77,7 +76,7 @@ def create_input_target_pairs(subword_to_word_mapping, source_matrix, max_contex
         if source_matrix is not None:
             targets.append(source_matrix[subword_idx])
         else:
-            targets.append(None)
+            targets.append(np.array([1, 2], dtype=np.float32)) # Dummy target for prediction set
 
     dataset['inputs'] = inputs
     dataset['targets'] = targets
@@ -98,10 +97,8 @@ def split_train_val_set(dataset, val_ratio=0.1, seed=42):
 
     train_set = {'inputs': [dataset['inputs'][i] for i in train_indices],
                  'targets': [dataset['targets'][i] for i in train_indices]}
-    print(f"Train set size: {len(train_set['inputs'])}")
     val_set = {'inputs': [dataset['inputs'][i] for i in val_indices],
                'targets': [dataset['targets'][i] for i in val_indices]}
-    print(f"Validation set size: {len(val_set['inputs'])}")
 
     return train_set, val_set
 
@@ -119,6 +116,7 @@ def create_mapping_dataset(source_subword_to_word_mapping, source_matrix,
                                          source_matrix=source_matrix,
                                          max_context_size=setformer_config_dict['model_hps']['max_context_size'])
     test_set = OFADataset(test_set['inputs'], test_set['targets'])
+    print(f"Test set size: {len(test_set)}")
 
     # Remove the test set from the source_subword_to_word_mapping
     source_subword_to_word_mapping = remove_test_set_from_source(source_subword_to_word_mapping, test_set_source_token_ids)
@@ -129,11 +127,16 @@ def create_mapping_dataset(source_subword_to_word_mapping, source_matrix,
     train_set, val_set = split_train_val_set(train_set, val_ratio=0.05)
     
     train_set = OFADataset(train_set['inputs'], train_set['targets'])
+    print(f"Train set size: {len(train_set)}")
     val_set = OFADataset(val_set['inputs'], val_set['targets'])
+    print(f"Validation set size: {len(val_set)}")
 
     prediction_set = create_input_target_pairs(subword_to_word_mapping=target_subword_to_word_mapping, 
                                                 source_matrix=None,
                                                 max_context_size=setformer_config_dict['model_hps']['max_context_size'])
+    
+    prediction_set = OFADataset(prediction_set['inputs'], prediction_set['targets'])
+    print(f"Prediction set size: {len(prediction_set)}")
 
     return train_set, val_set, test_set, test_set_source_token_ids, prediction_set
 

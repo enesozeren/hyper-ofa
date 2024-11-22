@@ -3,6 +3,7 @@ import torch
 from setformer.setformer import SetFormer
 import matplotlib.pyplot as plt
 import os
+import numpy as np
 
 class SetFormerLightning(pl.LightningModule):
     def __init__(self, model: SetFormer, model_config_dict: dict):
@@ -45,6 +46,18 @@ class SetFormerLightning(pl.LightningModule):
         avg_cos_sim = self.cosine_similarity(outputs, targets).mean()
         self.log('avg_cos_sim', avg_cos_sim, on_step=False, on_epoch=True, prog_bar=True)
         return loss, avg_cos_sim
+    
+    def save_predictions(self, dataloader, output_path):
+        self.eval()
+        predictions = []
+        with torch.no_grad():
+            for batch in dataloader:
+                inputs, labels = batch
+                outputs = self(inputs)
+                predictions.extend(outputs.cpu().numpy())
+        
+        # Save predictions to a file
+        np.save(output_path, predictions)
 
 
 class LiveLossPlotCallback(pl.Callback):

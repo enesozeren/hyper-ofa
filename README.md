@@ -1,15 +1,42 @@
 # WISER - OFA
 
+To create ofa data use
+```bash
+python ofa/create_ofa_data.py \
+--word_vec_embedding_path colexnet_vectors/colexnet_vectors_minlang_50_200_10_updated.wv \
+--source_model_name xlm-roberta-base \
+--target_model_name cis-lmu/glot500-base \
+--keep_dim 100 \
+--output_dir outputs \
+--setformer_config_path setformer/configs/setformer_config.yaml
+```
+
 To train setformer use
+```bash
+TBD
+```
 
 To test setformer use
 ```bash
-python ofa/test_mapping_model.py \
+PYTORCH_ENABLE_MPS_FALLBACK=1 \
+python ofa/inference_with_mapping_model.py \
+--test_or_inference test \
 --setformer_config_path setformer/configs/setformer_config.yaml \
---test_set_path outputs/data_for_xlm-roberta-base_to_cis-lmu-glot500-base/test_set.pkl \
+--data_set_path outputs/data_for_xlm-roberta-base_to_cis-lmu-glot500-base/test_set.pkl \
 --checkpoint_path setformer/training_logs/2024-11-17_23-17-59/checkpoints/model-epoch=02-val_loss=0.7805.ckpt
 ```
 
+To make inference with setformer use
+```bash
+PYTORCH_ENABLE_MPS_FALLBACK=1 \
+python ofa/inference_with_mapping_model.py \
+--test_or_inference inference \
+--setformer_config_path setformer/configs/setformer_config.yaml \
+--data_set_path outputs/data_for_xlm-roberta-base_to_cis-lmu-glot500-base/prediction_set.pkl \
+--checkpoint_path setformer/training_logs/2024-11-17_23-17-59/checkpoints/model-epoch=02-val_loss=0.7805.ckpt
+```
+
+# OLD README
 # OFA
 
 This is the repository for the pipeline of **O**ne **F**or **A**ll Framework, which aims to find **a good initialization of subword embeddings** when we want to adapt a monolingual or multilingual PLM to many languages. The framework optionally applies matrix factorization to the original PLM subword embeddings and replaces the new subword embeddings with two smaller matrices, which can largely reduce the number of parameters. Therefore, the OFA framework can boost efficient **large-scale multilingual continued pretraining**, which is especially helpful to a limited computation budget. Some of the code is based on [Glot500](https://github.com/cisnlp/Glot500), [WECHSEL](https://github.com/CPJKU/wechsel) and [FOCUS](https://github.com/konstantinjdobler/focus).  
