@@ -3,7 +3,7 @@ import torch
 from setformer.setformer import SetFormer
 import matplotlib.pyplot as plt
 import os
-import numpy as np
+import pickle
 
 class SetFormerLightning(pl.LightningModule):
     def __init__(self, model: SetFormer, model_config_dict: dict):
@@ -47,17 +47,33 @@ class SetFormerLightning(pl.LightningModule):
         self.log('avg_cos_sim', avg_cos_sim, on_step=False, on_epoch=True, prog_bar=True)
         return loss, avg_cos_sim
     
-    def save_predictions(self, dataloader, output_path):
-        self.eval()
-        predictions = []
+    def save_predictions(self, dataloader, target_subword_idxs: list, output_path):
+        '''
+        Save the predictions to a dictionary where the key is the target subword index
+        :param dataloader: The dataloader
+        :param target_subword_idxs: The target subword indices
+        :param output_path: The output path to save the predictions
+        :return: Nothing
+        '''
+        
+        self.model.eval()
+        predictions = {}
+        output_list = []
         with torch.no_grad():
             for batch in dataloader:
-                inputs, labels = batch
-                outputs = self(inputs)
-                predictions.extend(outputs.cpu().numpy())
-        
-        # Save predictions to a file
-        np.save(output_path, predictions)
+                inputs, targets = batch
+                outputs = self.model(inputs)
+                output_list.append(outputs)
+
+        # Concatenate the output_list
+        output_tensor = torch.cat(output_list, dim=0)
+        # Save the predictions to the dictionary with the target subword index as the key
+        for i, target_subword_idx in enumerate(target_subword_idxs):
+            predictions[target_subword_idx] = output_tensor[i].cpu().numpy()
+
+        # Save the predictions as pkl
+        with open(os.path.join(output_path, 'prediction_dict.pkl'), 'wb') as f:
+            pickle.dump(predictions, f)
 
 
 class LiveLossPlotCallback(pl.Callback):

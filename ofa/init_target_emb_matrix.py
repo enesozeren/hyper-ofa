@@ -8,19 +8,32 @@ from ofa.utils import (
     WordEmbedding
 )
 
+# PLAN
+
+# target_matrix = zero
+# overlapping_tokens -> init target matrix as overlapping token embeddings from source matrix
+## target_matrix[overlapping_tokens_target_idx] = source_matrix[overlapping_tokens_source_idx]
+# additional_tokens -> use setformer model to get embeddings for these tokens
+## target_matrix[additional_tokens_target_idx] = setformer_predictions[additional_tokens_target_idx] which is a dict
+# tokens which do not match any external word vocab -> random initialization
+## target_matrix[not_found_tokens_target_idx] = random_init
+# print how many tokens are kept, updated well, updated randomly
+# save target_matrix
+
 if __name__ == '__main__':
     # Arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('--prediction_set_path', type=str, required=True, help='Path to the prediction set')
-    parser.add_argument('--predictions_path', type=str, required=True, help='Path to the predictions for the prediction set')
-    parser.add_argument('--keep_dim', type=int, default=100, help="if factorized what is the D' params")
+    parser.add_argument('--source_model_name', type=str, default='xlm-roberta-base', help='source model params')
+    parser.add_argument('--target_model_name', type=str, default='cis-lmu/glot500-base', help='target model params')
+    parser.add_argument('--source_matrix_path', type=str, 
+                        default='outputs/data_for_xlm-roberta-base_to_cis-lmu-glot500-base/source_matrix.npy',
+                        help='source matrix path')
+    parser.add_argument('--setformer_predictions_path', type=str, 
+                        default='outputs/setformer_logs/inference_predictions.npy', 
+                        help='target matrix saving path for target model')
+    parser.add_argument('--target_matrix_output_path', type=str, default='outputs/target_matrix', 
+                        help='target matrix saving path for target model')
     args = parser.parse_args()
-
-    # Load the test set
-    with open(args.data_set_path, 'rb') as f:
-        dataset = pickle.load(f)
-
-
 
 
 
@@ -49,9 +62,7 @@ def create_target_embeddings(
     source_matrix,
     target_matrix=None,
     overlapping_tokens=None,
-    additional_tokens=None,
-    neighbors=10,
-    temperature=0.1,
+    additional_tokens=None
 ):
     """
     :param source_subword_embeddings: initialized source subword embeddings
@@ -62,41 +73,16 @@ def create_target_embeddings(
     :param target_matrix: the initialized subword embedding for target languages
     :param overlapping_tokens: the overlapped tokens in source and target-language tokenizers
     :param additional_tokens: the subword tokens that need to be initialized
-    :param neighbors: number of neighbors
-    :param temperature:
     :return:
     """
-    def get_n_closest(token_id, similarities, top_k):
-        if (target_subword_embeddings[token_id] == 0).all():
-            return None
-
-        best_indices = np.argpartition(similarities, -top_k)[-top_k:]
-        best_tokens = source_tokenizer.convert_ids_to_tokens(best_indices)
-
-        best = sorted(
-            [
-                (token, similarities[idx])
-                for token, idx in zip(best_tokens, best_indices)
-            ],
-            key=lambda x: -x[1],
-        )
-
-        return best
 
     source_vocab = source_tokenizer.vocab
 
     # all embeddings are initialized to zero first if no overlapped subword tokens are considered
-    if target_matrix is None:
-        target_matrix = np.zeros((len(target_tokenizer), source_matrix.shape[1]), dtype=source_matrix.dtype)
-    else:
-        # this makes sure that the shape of embeddings match
-        assert np.shape(target_matrix) == (len(target_tokenizer), source_matrix.shape[1])
+    target_matrix = np.zeros((len(target_tokenizer), source_matrix.shape[1]), dtype=source_matrix.dtype)
 
     mean, std = source_matrix.mean(0), source_matrix.std(0)
-    random_fallback_matrix = \
-        np.random.RandomState(114514).normal(mean, std, (len(target_tokenizer.vocab), source_matrix.shape[1]))
 
-    batch_size = 1024
     n_matched = 0
 
     not_found = {}

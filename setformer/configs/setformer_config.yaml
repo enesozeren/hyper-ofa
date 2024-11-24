@@ -11,11 +11,8 @@ model_hps:
 training_hps:
   batch_size: 128            # Batch size for training
   lr: 0.0001     # Initial learning rate
-  epochs: 3            # number of epochs
+  epochs: 1            # number of epochs
   num_workers: 2            # Number of workers for data loading
-
-logging:
-  log_dir: outputs/setformer_logs # Directory to save checkpoints
 
 notes: >
   Set Former training hyperparameters

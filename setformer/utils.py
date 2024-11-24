@@ -38,29 +38,14 @@ def create_word_embedding_matrix(multilingual_embeddings: WordEmbedding):
 
     return embedding_matrix
 
-def get_test_source_token_ids(subword_to_word_mapping, test_set_size: int):
-    '''
-    Get the test set from the source subword_to_word_mapping
-    '''
-    # randomly select test_set_size number of subword indices from the subword_to_word_mapping keys
-    test_subword_indices = np.random.choice(list(subword_to_word_mapping.keys()), test_set_size, replace=False)
-    return test_subword_indices
-
-def remove_test_set_from_source(subword_to_word_mapping, test_set_source_token_ids):
-    '''
-    Remove the test set from the source subword_to_word_mapping
-    '''
-    for subword_idx in test_set_source_token_ids:
-        del subword_to_word_mapping[subword_idx]
-
-    return subword_to_word_mapping
-
 # The dataset size can be increased by generating shuffled word indices which has a larger size than the context size
 def create_input_target_pairs(subword_to_word_mapping, source_matrix, max_context_size: int):
     '''
     Create input-target pairs for the SetFormer model
     :param subword_to_word_mapping: A dictionary that maps subword idx to word indices
     :param source_matrix: The source embedding matrix
+    :param max_context_size: The maximum context size
+    :return: A dictionary that contains inputs (lists of word indices) targets (source vectors)
     '''
     
     dataset = {}
@@ -83,62 +68,31 @@ def create_input_target_pairs(subword_to_word_mapping, source_matrix, max_contex
  
     return dataset
 
-def split_train_val_set(dataset, val_ratio=0.1, seed=42):
+def train_val_test_split(source_subword_to_word_mapping, train_ratio, val_ratio, test_ratio, seed=42):
     '''
-    Split the dataset into train and validation sets after random shuffling
+    Split the source subword_to_word_mapping into train, validation and test sets
+    :param source_subword_to_word_mapping: A dictionary that maps subword idx to word indices
+    :param train_ratio: The ratio of the train set
+    :param val_ratio: The ratio of the validation set
+    :param test_ratio: The ratio of the test set
+    :param seed: Random seed for reproducibility
     '''
     np.random.seed(seed)
-    num_samples = len(dataset['inputs'])
-    indices = np.arange(num_samples)
-    np.random.shuffle(indices)
-    val_size = int(num_samples * val_ratio)
-    train_indices = indices[val_size:]
-    val_indices = indices[:val_size]
+    subword_indices = list(source_subword_to_word_mapping.keys())
+    np.random.shuffle(subword_indices)
+    num_subwords = len(subword_indices)
 
-    train_set = {'inputs': [dataset['inputs'][i] for i in train_indices],
-                 'targets': [dataset['targets'][i] for i in train_indices]}
-    val_set = {'inputs': [dataset['inputs'][i] for i in val_indices],
-               'targets': [dataset['targets'][i] for i in val_indices]}
+    train_size = int(num_subwords * train_ratio)
+    val_size = int(num_subwords * val_ratio)
+    test_size = int(num_subwords * test_ratio)
+    print(f"Train size: {train_size}, Val size: {val_size}, Test size: {test_size}")
 
-    return train_set, val_set
+    train_mapping_set = {subword_idx: source_subword_to_word_mapping[subword_idx] for subword_idx in subword_indices[:train_size]}
+    val_mapping_set = {subword_idx: source_subword_to_word_mapping[subword_idx] for subword_idx in subword_indices[train_size:train_size+val_size]}
+    test_mapping_set = {subword_idx: source_subword_to_word_mapping[subword_idx] for subword_idx in subword_indices[train_size+val_size:]}
 
-def create_mapping_dataset(source_subword_to_word_mapping, source_matrix,
-                           target_subword_to_word_mapping, setformer_config_path):
+    return train_mapping_set, val_mapping_set, test_mapping_set
 
-    # Get the model config
-    with open(setformer_config_path, 'r') as file:
-        setformer_config_dict = yaml.load(file, Loader=yaml.FullLoader)
-
-    # Split the test set to compare learning based OFA and original OFA later
-    test_set_source_token_ids = get_test_source_token_ids(source_subword_to_word_mapping, test_set_size=3_000)
-    test_subword_to_word_mapping = {subword_idx: source_subword_to_word_mapping[subword_idx] for subword_idx in test_set_source_token_ids}
-    test_set = create_input_target_pairs(subword_to_word_mapping=test_subword_to_word_mapping,
-                                         source_matrix=source_matrix,
-                                         max_context_size=setformer_config_dict['model_hps']['max_context_size'])
-    test_set = OFADataset(test_set['inputs'], test_set['targets'])
-    print(f"Test set size: {len(test_set)}")
-
-    # Remove the test set from the source_subword_to_word_mapping
-    source_subword_to_word_mapping = remove_test_set_from_source(source_subword_to_word_mapping, test_set_source_token_ids)
-
-    train_set = create_input_target_pairs(subword_to_word_mapping=source_subword_to_word_mapping, 
-                                          source_matrix=source_matrix, 
-                                          max_context_size=setformer_config_dict['model_hps']['max_context_size'])
-    train_set, val_set = split_train_val_set(train_set, val_ratio=0.05)
-    
-    train_set = OFADataset(train_set['inputs'], train_set['targets'])
-    print(f"Train set size: {len(train_set)}")
-    val_set = OFADataset(val_set['inputs'], val_set['targets'])
-    print(f"Validation set size: {len(val_set)}")
-
-    prediction_set = create_input_target_pairs(subword_to_word_mapping=target_subword_to_word_mapping, 
-                                                source_matrix=None,
-                                                max_context_size=setformer_config_dict['model_hps']['max_context_size'])
-    
-    prediction_set = OFADataset(prediction_set['inputs'], prediction_set['targets'])
-    print(f"Prediction set size: {len(prediction_set)}")
-
-    return train_set, val_set, test_set, test_set_source_token_ids, prediction_set
 
 def calculate_target_coord_matrix(setformer_model, prediction_set, target_matrix):
     pass

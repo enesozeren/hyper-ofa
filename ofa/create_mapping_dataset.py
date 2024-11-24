@@ -4,10 +4,6 @@ from ofa.utils import (
     WordEmbedding
 )
 
-from setformer.utils import (
-    create_mapping_dataset,
-)
-
 import os
 import argparse
 import numpy as np
@@ -31,14 +27,8 @@ def bool_flag(s):
         raise argparse.ArgumentTypeError("Invalid value for a boolean flag!")
 
 
-def create_ofa_data(args, multilingual_embeddings, source_tokenizer, target_tokenizer, 
+def create_mapping_dataset(args, multilingual_embeddings, source_tokenizer, target_tokenizer, 
                     source_embeddings, output_path: str):
-
-    source_language_set = eval(args.source_language_set)
-    target_language_set = eval(args.target_language_set)
-
-    print(f"Source language set: {source_language_set}")
-    print(f"Target language set: {target_language_set}")
 
     # Get the source subword to word mapping
     source_subword_to_word_mapping, source_not_covered_subwords = get_subword_to_word_mappings(
@@ -68,28 +58,14 @@ def create_ofa_data(args, multilingual_embeddings, source_tokenizer, target_toke
     else:
         source_matrix = source_embeddings
 
-    # Create the dataset for Setformer training
-    train_set, val_set, test_set, test_set_source_token_ids, prediction_set = create_mapping_dataset(source_subword_to_word_mapping, 
-                                                                                            source_matrix,
-                                                                                            target_subword_to_word_mapping,
-                                                                                            args.setformer_config_path)
-    
     # Create the output directory if it does not exist
     if not os.path.exists(output_path):
         os.makedirs(output_path, exist_ok=True)
-        
-    # Save the dataset to the output directory for learning the transformation from word vector space to subword vector space
-    with open(os.path.join(output_path, 'train_set.pkl'), 'wb') as f:
-        pickle.dump(train_set, f)
-    with open(os.path.join(output_path, 'val_set.pkl'), 'wb') as f:
-        pickle.dump(val_set, f)
-    with open(os.path.join(output_path, 'test_set.pkl'), 'wb') as f:
-        pickle.dump(test_set, f)
 
-    with open(os.path.join(output_path, 'test_set_source_token_ids.pkl'), 'wb') as f:
-        pickle.dump(test_set_source_token_ids, f)
-    with open(os.path.join(output_path, 'prediction_set.pkl'), 'wb') as f:
-        pickle.dump(prediction_set, f)
+    with open(os.path.join(output_path, 'source_subword_to_word_mapping.pkl'), 'wb') as f:
+        pickle.dump(source_subword_to_word_mapping, f)
+    with open(os.path.join(output_path, 'target_subword_to_word_mapping.pkl'), 'wb') as f:
+        pickle.dump(target_subword_to_word_mapping, f)
 
     # Save target_not_covered_subwords to initialize them randomly later
     with open(os.path.join(output_path, 'target_not_covered_subwords.pkl'), 'wb') as f:
@@ -97,7 +73,6 @@ def create_ofa_data(args, multilingual_embeddings, source_tokenizer, target_toke
 
     # Save source_matrix as npy
     np.save(os.path.join(output_path, "source_matrix.npy"), source_matrix)
-
     # Save primitive embeddings as npy if factorized
     if factorize:
         np.save(os.path.join(output_path, 'primitive_embeddings.npy'), primitive_embeddings)
@@ -111,9 +86,6 @@ def main():
     parser.add_argument('--word_vec_embedding_path', type=str,
                         default='colexnet_vectors/colexnet_vectors_minlang_50_200_10_updated.wv',
                         help='multilingual embedding params') # DELETE THE PATH
-    parser.add_argument('--source_language_set', type=str, default='None', help='initializing algorithm params')
-    parser.add_argument('--target_language_set', type=str, default='None', help='initializing algorithm params')
-
     # source model related
     parser.add_argument('--source_model_name', type=str, default='xlm-roberta-base', help='source model params')
 
@@ -134,7 +106,10 @@ def main():
 
     args = parser.parse_args()
 
-    output_path = f'{args.output_dir}/data_for_{args.source_model_name.replace("/", "-")}_to_{args.target_model_name.replace("/", "-")}'
+    output_path = os.path.join(
+        args.output_dir,
+        f'{args.source_model_name.replace("/", "-")}_to_{args.target_model_name.replace("/", "-")}_dim-{args.keep_dim}',
+        'mapping_data')
 
     loaded_n2v = KeyedVectors.load(args.word_vec_embedding_path)
     multilingual_embeddings = WordEmbedding(loaded_n2v)
@@ -151,7 +126,7 @@ def main():
     print(f"Number of tokens in source tokenizer: {len(source_tokenizer)}")
     print(f"Number of tokens in target tokenizer: {len(target_tokenizer)}")
 
-    create_ofa_data(args, multilingual_embeddings=multilingual_embeddings,
+    create_mapping_dataset(args, multilingual_embeddings=multilingual_embeddings,
                     source_tokenizer=source_tokenizer, target_tokenizer=target_tokenizer,
                     source_embeddings=source_embeddings, 
                     output_path=output_path)

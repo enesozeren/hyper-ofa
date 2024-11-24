@@ -1,8 +1,8 @@
 # WISER - OFA
 
-To create ofa data use
+To create mapping dataset use
 ```bash
-python ofa/create_ofa_data.py \
+python ofa/create_mapping_dataset.py \
 --word_vec_embedding_path colexnet_vectors/colexnet_vectors_minlang_50_200_10_updated.wv \
 --source_model_name xlm-roberta-base \
 --target_model_name cis-lmu/glot500-base \
@@ -13,27 +13,34 @@ python ofa/create_ofa_data.py \
 
 To train setformer use
 ```bash
-TBD
+PYTORCH_ENABLE_MPS_FALLBACK=1 \
+python ofa/train_mapping_model.py \
+--word_vec_embedding_path colexnet_vectors/colexnet_vectors_minlang_50_200_10_updated.wv \
+--keep_dim 100 \
+--mapping_data_dir outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data \
+--setformer_config_path setformer/configs/setformer_config.yaml
 ```
 
-To test setformer use
+To calculate test metrics of setformer use
 ```bash
 PYTORCH_ENABLE_MPS_FALLBACK=1 \
-python ofa/inference_with_mapping_model.py \
+python ofa/mapping_model_inference.py \
 --test_or_inference test \
+--source_matrix_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/source_matrix.npy \
 --setformer_config_path setformer/configs/setformer_config.yaml \
---data_set_path outputs/data_for_xlm-roberta-base_to_cis-lmu-glot500-base/test_set.pkl \
---checkpoint_path setformer/training_logs/2024-11-17_23-17-59/checkpoints/model-epoch=02-val_loss=0.7805.ckpt
+--test_inference_mapping_data_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-11-24_16-00-41/test_mapping_set.pkl \
+--checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-11-24_16-00-41/checkpoints/model-epoch=00-val_loss=0.8105.ckpt
 ```
 
 To make inference with setformer use
 ```bash
 PYTORCH_ENABLE_MPS_FALLBACK=1 \
-python ofa/inference_with_mapping_model.py \
+python ofa/mapping_model_inference.py \
 --test_or_inference inference \
 --setformer_config_path setformer/configs/setformer_config.yaml \
---data_set_path outputs/data_for_xlm-roberta-base_to_cis-lmu-glot500-base/prediction_set.pkl \
---checkpoint_path setformer/training_logs/2024-11-17_23-17-59/checkpoints/model-epoch=02-val_loss=0.7805.ckpt
+--test_inference_mapping_data_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/target_subword_to_word_mapping.pkl \
+--checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-11-24_16-00-41/checkpoints/model-epoch=00-val_loss=0.8105.ckpt \
+--keep_dim 100
 ```
 
 # OLD README
