@@ -43,6 +43,13 @@ python ofa/mapping_model_inference.py \
 --keep_dim 100
 ```
 
+To create the target matrix use
+```bash
+python ofa/init_target_matrix.py \
+--source_matrix_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/source_matrix.npy \
+--setformer_predictions_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-11-24_16-00-41/inference_logs/prediction_dict.pkl
+```
+
 # OLD README
 # OFA
 
