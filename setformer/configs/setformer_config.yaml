@@ -1,17 +1,17 @@
 model_hps:
-  num_layers: 2             # Number of transformer layers
-  emb_dim: 200              # Dimension of token embeddings
+  num_layers: 4             # Number of transformer layers
+  emb_dim: 200              # Dimension of word vectors
   num_heads: 8              # Number of attention heads
-  dim_feedforward: 128     # Dimension of feed-forward layers
+  dim_feedforward: 400      # Dimension of feed-forward layers
   dropout: 0.2              # Dropout rate
   max_context_size: 256     # Max Context size for the set transformer
-  padding_idx: 3610267           # PAD token idx
-  cls_idx: 3610268               # CLS token idx
+  padding_idx: 3610267      # PAD token idx
+  cls_idx: 3610268          # CLS token idx
 
 training_hps:
-  batch_size: 128            # Batch size for training
-  lr: 0.0001     # Initial learning rate
-  epochs: 1            # number of epochs
+  batch_size: 128
+  lr: 0.0001
+  epochs: 1
   num_workers: 2            # Number of workers for data loading
 
 notes: >

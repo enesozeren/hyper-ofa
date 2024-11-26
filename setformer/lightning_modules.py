@@ -19,14 +19,14 @@ class SetFormerLightning(pl.LightningModule):
         inputs, targets = batch
         outputs = self.model(inputs)
         loss = (1 - self.cosine_similarity(outputs, targets)).mean()
-        self.log('train_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log('train_loss', loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
         inputs, targets = batch
         outputs = self.model(inputs)
         loss = (1 - self.cosine_similarity(outputs, targets)).mean()
-        self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.model.parameters(), lr=self.model_config_dict['training_hps']['lr'])
@@ -35,16 +35,16 @@ class SetFormerLightning(pl.LightningModule):
         # Log model parameter counts
         total_params = sum(p.numel() for p in self.model.parameters())
         trainable_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
-        self.log_dict({'total_params': total_params, 'trainable_params': trainable_params})
+        self.log_dict({'total_params': total_params, 'trainable_params': trainable_params}, sync_dist=True)
 
     def test_step(self, batch, batch_idx):
         inputs, targets = batch
         outputs = self.model(inputs)
         loss = (1 - self.cosine_similarity(outputs, targets)).mean()
-        self.log('test_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log('test_loss', loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
         # Avg Cos Sim
         avg_cos_sim = self.cosine_similarity(outputs, targets).mean()
-        self.log('avg_cos_sim', avg_cos_sim, on_step=False, on_epoch=True, prog_bar=True)
+        self.log('avg_cos_sim', avg_cos_sim, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
         return loss, avg_cos_sim
     
     def save_predictions(self, dataloader, target_subword_idxs: list, output_path):
