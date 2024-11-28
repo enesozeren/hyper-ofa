@@ -64,10 +64,10 @@ if __name__ == '__main__':
                         help='predicted embeddings for target tokens path')
     args = parser.parse_args()
 
-    output_dir = os.path.dirname(os.path.dirname(args.setformer_predictions_path))
-
     # Load source matrix
     source_matrix = np.load(args.source_matrix_path)
+    # Load primitive_embeddings
+    primitive_embeddings = np.load(args.source_matrix_path.replace('source_matrix.npy', 'primitive_embeddings.npy'))
     
     # Load setformer predictions
     with open(args.setformer_predictions_path, 'rb') as f:
@@ -79,5 +79,10 @@ if __name__ == '__main__':
 
     target_matrix = create_target_embeddings(source_tokenizer, target_tokenizer, source_matrix, setformer_predictions)
 
-    # Save target matrix
+    output_dir = os.path.join(os.path.dirname(os.path.dirname(args.setformer_predictions_path)), 
+                              f'wiserofa_{args.source_model_name[:3]}_all_{target_matrix.shape[1]}')
+    # Save matrices
     np.save(os.path.join(output_dir, 'target_matrix.npy'), target_matrix)
+    np.save(os.path.join(output_dir, 'source_matrix.npy'), source_matrix)
+    np.save(os.path.join(output_dir, 'primitive_embeddings.npy'), primitive_embeddings)
+

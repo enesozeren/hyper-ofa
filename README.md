@@ -1,5 +1,7 @@
 # WISER - OFA
 
+## Wiser-Ofa initialization steps
+
 To create mapping dataset use
 ```bash
 python ofa/create_mapping_dataset.py \
@@ -39,7 +41,7 @@ python ofa/mapping_model_inference.py \
 --test_or_inference inference \
 --setformer_config_path setformer/configs/setformer_config.yaml \
 --test_inference_mapping_data_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/target_subword_to_word_mapping.pkl \
---checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-11-24_16-00-41/checkpoints/model-epoch=00-val_loss=0.8105.ckpt \
+--checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-11-26_21-43-31/checkpoints/model-epoch=27-val_loss=0.7452.ckpt \
 --keep_dim 100
 ```
 
@@ -47,7 +49,14 @@ To create the target matrix use
 ```bash
 python ofa/init_target_matrix.py \
 --source_matrix_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/source_matrix.npy \
---setformer_predictions_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-11-24_16-00-41/inference_logs/prediction_dict.pkl
+--setformer_predictions_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-11-26_21-43-31/inference_logs/prediction_dict.pkl
+```
+
+## Evaluation steps
+
+Retrieval bible test
+```bash
+bash evaluation/retrieval/evaluate_retrieval_bible_xlm.sh
 ```
 
 # OLD README

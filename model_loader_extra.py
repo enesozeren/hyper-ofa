@@ -35,9 +35,7 @@ def get_embedding_path(base_model_type, dim, only_eng_vocab=False, random_initia
     return embedding_path
 
 
-def load_assembled_model(base_model_type, dim, only_eng_vocab=False,
-                         path='/mounts/data/proj/yihong/newhome/OFA/stored_factorization/updated',
-                         random_initialization=False):
+def load_assembled_model(base_model_type, dim, embedding_dir, random_initialization=False):
 
     assert base_model_type in ['roberta-base', 'xlm-roberta-base', 'xlm-roberta-large']
 
@@ -58,38 +56,24 @@ def load_assembled_model(base_model_type, dim, only_eng_vocab=False,
         if dim == 1024:
             factorize = False
 
-    embedding_path = ''
-
     # loading the base model
     if base_model_type == 'roberta-base':
-        embedding_path += 'roberta'
         model = RobertaForMaskedLMUpdated.from_pretrained('roberta-base')
         config = RobertaConfig.from_pretrained('roberta-base')
     elif base_model_type == 'xlm-roberta-base':
-        embedding_path += 'xlm'
         model = XLMRobertaForMaskedLMUpdated.from_pretrained('xlm-roberta-base')
         config = XLMRobertaConfig.from_pretrained('xlm-roberta-base')
     else:
-        embedding_path += 'xlm_large'
         model = XLMRobertaForMaskedLMUpdated.from_pretrained('xlm-roberta-large')
         config = XLMRobertaConfig.from_pretrained('xlm-roberta-large')
-
-    if random_initialization:
-        embedding_path += '_rand'
-    else:
-        if only_eng_vocab:
-            embedding_path += '_eng'
-        else:
-            embedding_path += '_all'
-        embedding_path += f"_{str(dim)}"
 
     primitive_embeddings = None
 
     if factorize:
-        primitive_embeddings = np.load(f"{path}/{embedding_path}/primitive_embeddings.npy")
+        primitive_embeddings = np.load(f"{embedding_dir}/primitive_embeddings.npy")
         config.num_primitive = dim
 
-    target_matrix = np.load(f"{path}/{embedding_path}/target_matrix.npy")
+    target_matrix = np.load(f"{embedding_dir}/target_matrix.npy")
     config.vocab_size = len(target_matrix)
     if factorize:
         if base_model_type == 'roberta-base':
