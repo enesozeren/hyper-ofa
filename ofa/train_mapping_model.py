@@ -27,11 +27,14 @@ def train_mapping_model(multilingual_embeddings, source_subword_to_word_mapping,
     
     # Create the input and target pairs for training the setformer model
     train_mapping_set, val_mapping_set, test_mapping_set = train_val_test_split(source_subword_to_word_mapping,
-                                                                                train_ratio=0.9, val_ratio=0.05, test_ratio=0.05)
+                                                                                train_ratio=0.95, val_ratio=0.025, test_ratio=0.025)
     train_input_target_pairs = create_input_target_pairs(train_mapping_set, source_matrix, 
-                                                        setformer_config_dict['model_hps']['max_context_size'])
+                                                        setformer_config_dict['model_hps']['max_context_size'], train=True)
     val_input_target_pairs = create_input_target_pairs(val_mapping_set, source_matrix,
-                                                        setformer_config_dict['model_hps']['max_context_size'])
+                                                        setformer_config_dict['model_hps']['max_context_size'], train=False)
+    print(f"Train size: {len(train_input_target_pairs['inputs'])}\n", 
+          f"Val size: {len(val_input_target_pairs['inputs'])}\n",
+          f"Test size: {len(test_mapping_set)}")
     # Save the test mapping set
     with open(os.path.join(output_dir, 'test_mapping_set.pkl'), 'wb') as f:
         pickle.dump(test_mapping_set, f)

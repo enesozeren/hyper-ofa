@@ -38,34 +38,42 @@ def create_word_embedding_matrix(multilingual_embeddings: WordEmbedding):
 
     return embedding_matrix
 
-# The dataset size can be increased by generating shuffled word indices which has a larger size than the context size
-def create_input_target_pairs(subword_to_word_mapping, source_matrix, max_context_size: int):
-    '''
-    Create input-target pairs for the SetFormer model
-    :param subword_to_word_mapping: A dictionary that maps subword idx to word indices
-    :param source_matrix: The source embedding matrix
-    :param max_context_size: The maximum context size
-    :return: A dictionary that contains inputs (lists of word indices) targets (source vectors)
-    '''
+def create_input_target_pairs(subword_to_word_mapping, source_matrix, max_context_size: int, train: bool):
+    """
+    Create input-target pairs for the SetFormer model.
+    :param subword_to_word_mapping: A dictionary that maps subword idx to word indices.
+    :param source_matrix: The source embedding matrix.
+    :param max_context_size: The maximum context size.
+    :param train: If True, the function will create multiple inputs with overlapping chunks.
+    :return: A dictionary containing inputs (lists of word indices) and targets (source vectors).
+    """
     
     dataset = {}
     inputs = []
     targets = []
+
     for subword_idx, word_idxs in subword_to_word_mapping.items():
         # Shuffle the word indices 
         np.random.shuffle(word_idxs)
         # Truncate inputs to the context size
-        word_idxs = word_idxs[:max_context_size-1] # -1 for the CLS token to be added in collate_fn
-        inputs.append(word_idxs)
+        inputs.append(word_idxs[:max_context_size-1]) # -1 for the CLS token to be added in collate_fn
 
         if source_matrix is not None:
             targets.append(source_matrix[subword_idx])
         else:
-            targets.append(np.array([1, 2], dtype=np.float32)) # Dummy target for prediction set
-
+            targets.append(np.array([1, 2], dtype=np.float32))  # Dummy target for prediction set
+        
+        # Only augment if in training mode and len(word_idxs) is above a th
+        if train and len(word_idxs) >= 20:
+            # Generate new samples by using 60% of the indices
+            num_indices_to_sample = min(int(len(word_idxs) * 0.6), max_context_size-1)
+            sampled_idxs = np.random.choice(word_idxs, num_indices_to_sample, replace=False)
+            inputs.append(sampled_idxs.tolist())  # Convert to list before appending
+            targets.append(source_matrix[subword_idx])  # Same target for the new input
+    
     dataset['inputs'] = inputs
     dataset['targets'] = targets
- 
+    
     return dataset
 
 def train_val_test_split(source_subword_to_word_mapping, train_ratio, val_ratio, test_ratio, seed=42):
@@ -85,14 +93,9 @@ def train_val_test_split(source_subword_to_word_mapping, train_ratio, val_ratio,
     train_size = int(num_subwords * train_ratio)
     val_size = int(num_subwords * val_ratio)
     test_size = int(num_subwords * test_ratio)
-    print(f"Train size: {train_size}, Val size: {val_size}, Test size: {test_size}")
 
     train_mapping_set = {subword_idx: source_subword_to_word_mapping[subword_idx] for subword_idx in subword_indices[:train_size]}
     val_mapping_set = {subword_idx: source_subword_to_word_mapping[subword_idx] for subword_idx in subword_indices[train_size:train_size+val_size]}
     test_mapping_set = {subword_idx: source_subword_to_word_mapping[subword_idx] for subword_idx in subword_indices[train_size+val_size:]}
 
     return train_mapping_set, val_mapping_set, test_mapping_set
-
-
-def calculate_target_coord_matrix(setformer_model, prediction_set, target_matrix):
-    pass

@@ -29,8 +29,10 @@ class SetFormer(nn.Module):
                                                    dim_feedforward=dim_feedforward, 
                                                    dropout=dropout, batch_first=True)
         self.encoder_block = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
-        # Output layer for the CLS token
-        self.output_layer = nn.Linear(emb_dim, output_dim)
+        # Output layers for the CLS token
+        self.output_layer_1 = nn.Linear(emb_dim, dim_feedforward)
+        self.relu = nn.ReLU()
+        self.output_layer_2 = nn.Linear(dim_feedforward, output_dim)
 
     def forward(self, x):
         '''
@@ -48,6 +50,7 @@ class SetFormer(nn.Module):
         # Get the CLS token in the first dimension
         x = x[:, 0, :]
         # Feed the CLS token to the output layer
-        x = self.output_layer(x) # (batch_size, output_dim)
+        x = self.relu(self.output_layer_1(x)) # (batch_size, dim_feedforward)
+        x = self.output_layer_2(x) # (batch_size, output_dim)
 
         return x

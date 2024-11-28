@@ -29,8 +29,16 @@ class SetFormerLightning(pl.LightningModule):
         self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.model.parameters(), lr=self.model_config_dict['training_hps']['lr'])
-    
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.model_config_dict['training_hps']['lr'])
+        
+        # Define the StepLR scheduler
+        scheduler = {
+            'scheduler': torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.75),
+            'interval': 'epoch',  # Apply every epoch
+            'frequency': 1,       # Apply once every epoch
+        }
+        return [optimizer], [scheduler]
+
     def on_train_start(self):
         # Log model parameter counts
         total_params = sum(p.numel() for p in self.model.parameters())

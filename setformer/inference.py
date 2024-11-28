@@ -35,7 +35,8 @@ def setformer_inference(checkpoint_path, setformer_config_dict: dict,
 
     input_target_pairs = create_input_target_pairs(subword_to_word_mapping=mapping_data,
                                                    source_matrix=source_matrix,
-                                                   max_context_size=setformer_config_dict['model_hps']['max_context_size'])
+                                                   max_context_size=setformer_config_dict['model_hps']['max_context_size'],
+                                                   train=False)
 
     # Create the dataset
     dataset = OFADataset(input_target_pairs['inputs'], input_target_pairs['targets'])
