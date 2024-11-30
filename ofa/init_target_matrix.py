@@ -81,6 +81,8 @@ if __name__ == '__main__':
 
     output_dir = os.path.join(os.path.dirname(os.path.dirname(args.setformer_predictions_path)), 
                               f'wiserofa_{args.source_model_name[:3]}_all_{target_matrix.shape[1]}')
+    
+    os.makedirs(output_dir, exist_ok=True)
     # Save matrices
     np.save(os.path.join(output_dir, 'target_matrix.npy'), target_matrix)
     np.save(os.path.join(output_dir, 'source_matrix.npy'), source_matrix)

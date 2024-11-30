@@ -4,6 +4,7 @@ from setformer.setformer import SetFormer
 import matplotlib.pyplot as plt
 import os
 import pickle
+from tqdm import tqdm
 
 class SetFormerLightning(pl.LightningModule):
     def __init__(self, model: SetFormer, model_config_dict: dict):
@@ -55,21 +56,24 @@ class SetFormerLightning(pl.LightningModule):
         self.log('avg_cos_sim', avg_cos_sim, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
         return loss, avg_cos_sim
     
-    def save_predictions(self, dataloader, target_subword_idxs: list, output_path):
+    def save_predictions(self, dataloader, target_subword_idxs: list, output_path, device):
         '''
         Save the predictions to a dictionary where the key is the target subword index
         :param dataloader: The dataloader
         :param target_subword_idxs: The target subword indices
         :param output_path: The output path to save the predictions
+        :param device: The device to run the model
         :return: Nothing
         '''
-        
+        self.model.to(device)
         self.model.eval()
         predictions = {}
         output_list = []
         with torch.no_grad():
-            for batch in dataloader:
+            for batch in tqdm(dataloader, desc="Predicting"):
                 inputs, targets = batch
+                inputs = inputs.to(device)
+
                 outputs = self.model(inputs)
                 output_list.append(outputs)
 

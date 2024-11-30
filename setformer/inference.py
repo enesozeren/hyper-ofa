@@ -65,13 +65,31 @@ def setformer_inference(checkpoint_path, setformer_config_dict: dict,
                           word_vector_emb=word_vector_emb_matrix,
                           padding_idx=setformer_config_dict['model_hps']['padding_idx'])
     
-    logger = CSVLogger(save_dir=output_path)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Device: {device}") 
+
+    # Load the model from checkpoint using pytorch
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=True)
+    # Adjust the state_dict keys
+    state_dict = checkpoint['state_dict']
+    new_state_dict = {}
+    for key, value in state_dict.items():
+        # Remove the "model." prefix
+        new_key = key.replace("model.", "") if key.startswith("model.") else key
+        new_state_dict[new_key] = value    
+    setformer.load_state_dict(new_state_dict)
+
+    # Create the lightning module
     pl_model = SetFormerLightning(setformer, setformer_config_dict)
+    pl_model.to(device)
+    pl_model.eval()
+
+    logger = CSVLogger(save_dir=output_path)
 
     if test_or_inference == 'test':
         # Test the model
         trainer = pl.Trainer(accelerator='auto', logger=logger)
-        trainer.test(pl_model, ckpt_path=checkpoint_path, dataloaders=data_loader)
-
-    # Save predictions
-    pl_model.save_predictions(data_loader, target_subword_idxs, output_path)
+        trainer.test(pl_model, dataloaders=data_loader)
+    else:
+        # Inference
+        pl_model.save_predictions(data_loader, target_subword_idxs, output_path, device)

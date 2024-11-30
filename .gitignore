@@ -6,3 +6,5 @@ notebooks/*
 datasets
 setformer/training_logs/*
 .vscode
+evaluation/retrieval/bible
+evaluation/retrieval/bible_tokenized_xlm_r_glot500

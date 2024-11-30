@@ -30,10 +30,10 @@ CHECKPOINT_NUM=0
 # set random_initialization "true" to use models with random initialization for embeddings of new words
 RANDOM_INITIALIZATION="false"
 # paths
-DATA_DIR="/Users/eno/Documents/datasets/retrieval_bible_test/"
-OUTPUT_DIR="/Users/eno/Documents/my-repos/ofa/evaluation/retrieval/bible/"
-TOKENIZED_DIR="/Users/eno/Documents/my-repos/ofa/evaluation/retrieval/bible_tokenized_xlm_r"
-EMBEDDING_DIR="/Users/eno/Documents/my-repos/ofa/ofa/stored_factorization/updated/xlm_all_100"
+DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/retrieval_bible_test/"
+OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/retrieval/bible/"
+TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/retrieval/bible_tokenized_xlm_r"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-11-28_16-28-41/wiserofa_xlm_all_100"
 
 python -u evaluation/retrieval/evaluate_retrieval_bible.py \
     --model_type $MODEL_TYPE \
