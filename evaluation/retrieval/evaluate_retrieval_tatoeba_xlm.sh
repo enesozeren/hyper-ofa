@@ -13,12 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# MODEL=${1:-cis-lmu/glot500-base}
 MODEL="xlm-roberta-base"
-# MODEL="facebook/xlm-v-base"
-GPU=${2:-2}
-
-export CUDA_VISIBLE_DEVICES=$GPU
 MODEL_TYPE="xlmr"
 
 MAX_LENGTH=512
@@ -28,7 +23,12 @@ DIM=768
 NLAYER=12
 LAYER=7
 NUM_PRIMITIVE=100
-checkpoint_num=290000
+# set use_initialization "true" to use models with initialization
+USE_INITIALIZATION="true"
+# set checkpoint_num=0 to use models without continue pretraining
+CHECKPOINT_NUM=0
+# set random_initialization "true" to use models with random initialization for embeddings of new words
+RANDOM_INITIALIZATION="false"
 
 # set checkpoint_num=0 to use models without continue pretraining
 
@@ -39,11 +39,11 @@ checkpoint_num=290000
 # only comment init_checkpoint (i.e., set it None) if you want to the huggingface pretrained model, e.g., roberta
 # otherwise always keep it uncommented
 
-DATA_DIR="/mounts/data/proj/linpq/datasets/retrieval_tatoeba/"
-OUTPUT_DIR="/mounts/data/proj/ayyoobbig/ofa/evaluation/retrieval/tatoeba/"
-tokenized_dir="/mounts/data/proj/ayyoobbig/ofa/evaluation/retrieval/tatoeba_tokenized_xlm_v"
-init_checkpoint="/mounts/data/proj/ayyoobbig/ofa/trained_models/updated/"
-
+# paths
+DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/retrieval_tatoeba/"
+OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/retrieval/tatoeba/"
+TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/retrieval/tatoeba_tokenized_xlm_v"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-03_23-11-54/wiserofa_xlm_all_100"
 
 python -u evaluate_retrieval_tatoeba.py \
     --model_type $MODEL_TYPE \
@@ -57,10 +57,9 @@ python -u evaluate_retrieval_tatoeba.py \
     --dist cosine $LC \
     --specific_layer $LAYER \
     --only_eng_vocab "false" \
-    --use_initialization "true" \
-    --random_initialization "false" \
-    --checkpoint_num $checkpoint_num \
+    --use_initialization $USE_INITIALIZATION \
+    --random_initialization $RANDOM_INITIALIZATION \
+    --checkpoint_num $CHECKPOINT_NUM \
     --num_primitive $NUM_PRIMITIVE \
-    --tokenized_dir $tokenized_dir \
-    --init_checkpoint $init_checkpoint
+    --tokenized_dir $TOKENIZED_DIR
 

@@ -3,7 +3,7 @@ model_hps:
   emb_dim: 200              # Dimension of word vectors
   num_heads: 10             # Number of attention heads
   dim_feedforward: 800      # Dimension of feed-forward layers
-  dropout: 0.25             # Dropout rate
+  dropout: 0.2              # Dropout rate
   max_context_size: 128     # Max Context size for the set transformer
   padding_idx: 3610267      # PAD token idx
   cls_idx: 3610268          # CLS token idx
@@ -11,7 +11,7 @@ model_hps:
 training_hps:
   batch_size: 128
   lr: 0.0001
-  epochs: 30
+  epochs: 10
   num_workers: 8            # Number of workers for data loading
 
 notes: >

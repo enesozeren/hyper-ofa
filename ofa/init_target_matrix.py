@@ -34,9 +34,11 @@ def create_target_embeddings(source_tokenizer, target_tokenizer, source_matrix, 
         target_matrix[target_idx] = source_matrix[source_idx]
 
     # Remove the overlapping tokens from setformer predictions
-    overlapping_token_target_idxs = [target_idx for target_idx, _ in overlapping_token_mapping.values()]
-    setformer_predictions_no_overlapping = \
-        {k: v for k, v in setformer_predictions.items() if k not in overlapping_token_target_idxs}
+    overlapping_token_target_idx_set = set([target_idx for target_idx, _ in overlapping_token_mapping.values()])
+    # Filter out the overlapping tokens more efficiently
+    setformer_predictions_no_overlapping = {
+        k: v for k, v in setformer_predictions.items() if k not in overlapping_token_target_idx_set
+    }
     print(f"Setformer predictions (overlapping tokens removed) count: {len(setformer_predictions_no_overlapping)}")
 
     # Initialize the additional tokens in the target matrix from the setformer predictions
