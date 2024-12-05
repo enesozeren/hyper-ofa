@@ -68,16 +68,16 @@ def setformer_inference(checkpoint_path, setformer_config_dict: dict,
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Device: {device}") 
 
-    # # Load the model from checkpoint using pytorch
-    # checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=True)
-    # # Adjust the state_dict keys
-    # state_dict = checkpoint['state_dict']
-    # new_state_dict = {}
-    # for key, value in state_dict.items():
-    #     # Remove the "model." prefix
-    #     new_key = key.replace("model.", "") if key.startswith("model.") else key
-    #     new_state_dict[new_key] = value    
-    # setformer.load_state_dict(new_state_dict)
+    # Load the model from checkpoint using pytorch
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=True)
+    # Adjust the state_dict keys
+    state_dict = checkpoint['state_dict']
+    new_state_dict = {}
+    for key, value in state_dict.items():
+        # Remove the "model." prefix
+        new_key = key.replace("model.", "") if key.startswith("model.") else key
+        new_state_dict[new_key] = value    
+    setformer.load_state_dict(new_state_dict)
 
     # Create the lightning module
     pl_model = SetFormerLightning(setformer, setformer_config_dict)

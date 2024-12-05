@@ -28,8 +28,8 @@ python ofa/mapping_model_inference.py \
 --test_or_inference test \
 --source_matrix_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/source_matrix.npy \
 --setformer_config_path setformer/configs/setformer_config.yaml \
---test_inference_mapping_data_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-03_23-11-54/test_mapping_set.pkl \
---checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-03_23-11-54/checkpoints/model-epoch=09-val_loss=0.7782.ckpt
+--test_inference_mapping_data_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-05_13-40-40/test_mapping_set.pkl \
+--checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-05_13-40-40/checkpoints/model-epoch=22-val_loss=0.7578.ckpt
 ```
 
 To make inference with setformer use
@@ -38,7 +38,7 @@ python ofa/mapping_model_inference.py \
 --test_or_inference inference \
 --setformer_config_path setformer/configs/setformer_config.yaml \
 --test_inference_mapping_data_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/target_subword_to_word_mapping.pkl \
---checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-03_23-11-54/checkpoints/model-epoch=09-val_loss=0.7782.ckpt \
+--checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-05_13-40-40/checkpoints/model-epoch=22-val_loss=0.7578.ckpt \
 --keep_dim 100
 ```
 
@@ -46,7 +46,7 @@ To create the target matrix use
 ```bash
 python ofa/init_target_matrix.py \
 --source_matrix_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/source_matrix.npy \
---setformer_predictions_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-03_23-11-54/inference_logs/prediction_dict.pkl
+--setformer_predictions_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-05_13-40-40/inference_logs/prediction_dict.pkl
 ```
 
 ## Evaluation steps
