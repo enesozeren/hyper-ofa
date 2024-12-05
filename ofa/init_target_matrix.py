@@ -47,12 +47,14 @@ def create_target_embeddings(source_tokenizer, target_tokenizer, source_matrix, 
     
     # Initialize the remaining tokens in the target matrix with random embeddings
     random_init_token_counter = 0
+    mean, std = source_matrix.mean(0), source_matrix.std(0)
+    random_state = np.random.RandomState(0)
     for target_idx, embedding in enumerate(target_matrix):
         if np.all(embedding == 0):
-            target_matrix[target_idx] = np.random.rand(embedding.shape[0])
+            target_matrix[target_idx] = random_state.normal(loc=mean, scale=std, size=embedding.shape[0])
             random_init_token_counter += 1
     print(f"Randomly initialized tokens count: {random_init_token_counter}")
-    
+
     return target_matrix
 
 

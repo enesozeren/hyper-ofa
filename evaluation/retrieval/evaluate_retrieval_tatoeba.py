@@ -15,7 +15,6 @@
 # limitations under the License.
 """Evaluate pretrained or fine-tuned models on retrieval tasks."""
 import sys
-sys.path.append('/mounts/data/proj/ayyoobbig/ofa/')
 import argparse
 
 import collections
@@ -48,7 +47,7 @@ import copy
 from modeling_xlmr_extra import XLMRobertaAssembledForMaskedLM
 from modeling_roberta_extra import RobertaAssembledForMaskedLM
 from model_loader_extra import load_assembled_model, get_embedding_path
-
+from evaluation.retrieval.evaluate_retrieval_bible import calculate_averages
 
 logger = logging.getLogger(__name__)
 
@@ -193,8 +192,9 @@ def load_model(args, lang, output_hidden_states=None):
             args.model_name_or_path, config=config)
     else:
         if args.checkpoint_num == 0 and args.use_initialization:
-            logger.info(f"Loading model from {args.embedding_path} without continue pretraining!")
-            model = load_assembled_model(args.model_name_or_path, args.num_primitive, args.only_eng_vocab, args.embedding_path, args.random_initialization)
+            logger.info(f"Loading model from {args.embedding_dir} without continue pretraining!")
+            model = load_assembled_model(args.model_name_or_path, args.num_primitive, 
+                                         args.embedding_dir, args.random_initialization)
             model = model.roberta
             config = model.config
             # the following is the glot500 tokenizer
@@ -399,8 +399,9 @@ def run(args):
 
     config, model, tokenizer, langid = load_model(args, 'eng_Latn', output_hidden_states=True)
     logging.info(str(model))
-
-    with open(os.path.join(args.output_dir, f'test_results.txt'), 'w') as result_writer:
+    
+    test_results_path = os.path.join(args.output_dir, f'test_results.txt')
+    with open(test_results_path, 'w') as result_writer:
         for src_lang in args.predict_langs:
             tgt_lang = 'eng_Latn'
             data_dir = '/'.join(args.data_dir.split('/')[:-1])
@@ -454,6 +455,15 @@ def run(args):
                     for p in predictions:
                         fout.write(str(p) + '\n')
 
+    # Calculate and print/write average results
+    avg_acc1, avg_acc5, avg_acc10 = calculate_averages(test_results_path)
+
+    with open(test_results_path, 'a') as result_writer:
+        result_writer.write("\n=====================\n")
+        result_writer.write("Average Accuracies:\n")
+        result_writer.write(f"Average Acc1: {avg_acc1:.3f}\n")
+        result_writer.write(f"Average Acc5: {avg_acc5:.3f}\n")
+        result_writer.write(f"Average Acc10: {avg_acc10:.3f}\n")    
 
 def main():
     parser = argparse.ArgumentParser(description='bitext mining')
@@ -607,9 +617,7 @@ def main():
 
     # update below
     parser.add_argument("--num_primitive", type=int, default=768)
-    parser.add_argument("--embedding_path", type=str, 
-        default="/mounts/data/proj/yihong/newhome/OFA/stored_factorization/updated"
-    )
+    parser.add_argument("--embedding_dir", type=str, required=True)
     parser.add_argument("--only_eng_vocab", type=bool_flag, default=False)
     parser.add_argument("--use_initialization", type=bool_flag, default=True)
     parser.add_argument("--random_initialization", type=bool_flag, default=False)
@@ -620,7 +628,7 @@ def main():
     args = parser.parse_args()
 
     args.predict_langs = []
-    with open('tatoeba_lang_list.txt', 'r') as f:
+    with open('evaluation/retrieval/tatoeba_lang_list.txt', 'r') as f:
         lines = f.readlines()
         for line in lines:
             args.predict_langs.append(line.strip().split('\t')[0])
@@ -629,7 +637,7 @@ def main():
     if args.init_checkpoint:
         # in this case, the tokenizer should all be glot500 tokenizer
         if args.use_initialization:
-            embedding_name = get_embedding_path(args.model_name_or_path, args.num_primitive, args.only_eng_vocab, args.random_initialization)
+            embedding_name = args.embedding_dir.split('/')[-1]
             args.init_checkpoint += f"LM_ofa_{embedding_name}/checkpoint-{str(args.checkpoint_num)}"
         else:
             args.init_checkpoint += f"{args.model_name_or_path}/checkpoint-{str(args.checkpoint_num)}"

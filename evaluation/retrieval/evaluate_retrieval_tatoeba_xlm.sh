@@ -21,7 +21,7 @@ LC=""
 BATCH_SIZE=128
 DIM=768
 NLAYER=12
-LAYER=7
+LAYER=11
 NUM_PRIMITIVE=100
 # set use_initialization "true" to use models with initialization
 USE_INITIALIZATION="true"
@@ -43,9 +43,9 @@ RANDOM_INITIALIZATION="false"
 DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/retrieval_tatoeba/"
 OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/retrieval/tatoeba/"
 TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/retrieval/tatoeba_tokenized_xlm_v"
-EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-03_23-11-54/wiserofa_xlm_all_100"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/outputs/ofa_xlm_all_100"
 
-python -u evaluate_retrieval_tatoeba.py \
+python -u evaluation/retrieval/evaluate_retrieval_tatoeba.py \
     --model_type $MODEL_TYPE \
     --model_name_or_path $MODEL \
     --data_dir $DATA_DIR \
@@ -61,5 +61,7 @@ python -u evaluate_retrieval_tatoeba.py \
     --random_initialization $RANDOM_INITIALIZATION \
     --checkpoint_num $CHECKPOINT_NUM \
     --num_primitive $NUM_PRIMITIVE \
-    --tokenized_dir $TOKENIZED_DIR
+    --tokenized_dir $TOKENIZED_DIR \
+    --init_checkpoint 0 \
+    --embedding_dir $EMBEDDING_DIR
 
