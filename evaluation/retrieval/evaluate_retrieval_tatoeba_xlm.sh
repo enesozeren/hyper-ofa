@@ -21,7 +21,7 @@ LC=""
 BATCH_SIZE=128
 DIM=768
 NLAYER=12
-LAYER=11
+LAYER=7
 NUM_PRIMITIVE=100
 # set use_initialization "true" to use models with initialization
 USE_INITIALIZATION="true"
@@ -42,8 +42,8 @@ RANDOM_INITIALIZATION="false"
 # paths
 DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/retrieval_tatoeba/"
 OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/retrieval/tatoeba/"
-TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/retrieval/tatoeba_tokenized_xlm_v"
-EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/outputs/ofa_xlm_all_100"
+TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/retrieval/tatoeba_tokenized_xlm_r"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-06_02-27-50/wiserofa_xlm_all_100"
 
 python -u evaluation/retrieval/evaluate_retrieval_tatoeba.py \
     --model_type $MODEL_TYPE \

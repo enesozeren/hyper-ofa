@@ -11,6 +11,8 @@ model_hps:
 training_hps:
   batch_size: 128
   lr: 0.0001
+  cos_sim_loss_weight: 1.0
+  magnitude_loss_weight: 5.0
   epochs: 30
   num_workers: 8            # Number of workers for data loading
 

@@ -15,35 +15,28 @@
 
 # MODEL=${1:-cis-lmu/glot500-base}
 MODEL="roberta-base"
-GPU=${2:-3}
-
-export CUDA_VISIBLE_DEVICES=$GPU
 MODEL_TYPE="roberta"
 
 MAX_LENGTH=512
 LC=""
 BATCH_SIZE=128
 DIM=768
+NUM_PRIMITIVE=100
 NLAYER=12
 LAYER=7
-NUM_PRIMITIVE=100
-checkpoint_num=0
-
-# set checkpoint_num=0 to use models without continue pretraining
-
 # set use_initialization "true" to use models with initialization
-
+USE_INITIALIZATION="true"
+# set checkpoint_num=0 to use models without continue pretraining
+CHECKPOINT_NUM=0
 # set random_initialization "true" to use models with random initialization for embeddings of new words
+RANDOM_INITIALIZATION="false"
+# paths
+DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/retrieval_bible_test/"
+OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/retrieval/bible/"
+TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/retrieval/bible_tokenized_roberta"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-05_20-58-11/wiserofa_rob_all_100"
 
-# only comment init_checkpoint (i.e., set it None) if you want to the huggingface pretrained model, e.g., roberta
-# otherwise always keep it uncommented
-
-DATA_DIR="/mounts/data/proj/linpq/datasets/retrieval_bible_test/"
-OUTPUT_DIR="/mounts/data/proj/ayyoobbig/ofa/evaluation/retrieval/bible/"
-tokenized_dir="/mounts/data/proj/ayyoobbig/ofa/evaluation/retrieval/bible_tokenized"
-init_checkpoint="/mounts/data/proj/ayyoobbig/ofa/trained_models/updated/"
-
-python -u evaluate_retrieval_bible.py \
+python -u evaluation/retrieval/evaluate_retrieval_bible.py \
     --model_type $MODEL_TYPE \
     --model_name_or_path $MODEL \
     --data_dir $DATA_DIR \
@@ -55,10 +48,11 @@ python -u evaluate_retrieval_bible.py \
     --dist cosine $LC \
     --specific_layer $LAYER \
     --only_eng_vocab "false" \
-    --use_initialization "true" \
-    --random_initialization "false" \
-    --checkpoint_num $checkpoint_num \
+    --use_initialization $USE_INITIALIZATION \
+    --random_initialization $RANDOM_INITIALIZATION \
     --num_primitive $NUM_PRIMITIVE \
-    --tokenized_dir $tokenized_dir \
-    --init_checkpoint $init_checkpoint
+    --tokenized_dir $TOKENIZED_DIR \
+    --checkpoint_num $CHECKPOINT_NUM \
+    --init_checkpoint 0 \
+    --embedding_dir $EMBEDDING_DIR
 

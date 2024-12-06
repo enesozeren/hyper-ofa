@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 class SetFormer(nn.Module):
@@ -33,6 +34,8 @@ class SetFormer(nn.Module):
         self.output_layer_1 = nn.Linear(emb_dim, dim_feedforward)
         self.relu = nn.ReLU()
         self.output_layer_2 = nn.Linear(dim_feedforward, output_dim)
+        # Output scaling layer
+        self.output_scale = nn.Parameter(torch.tensor(0.00001))  # Initialize with a small scale
 
     def forward(self, x):
         '''
@@ -52,5 +55,7 @@ class SetFormer(nn.Module):
         # Feed the CLS token to the output layer
         x = self.relu(self.output_layer_1(x)) # (batch_size, dim_feedforward)
         x = self.output_layer_2(x) # (batch_size, output_dim)
+        # Apply scaling to the output since target outputs are very small (around e-5)
+        x = self.output_scale * x
 
         return x

@@ -23,14 +23,19 @@ class CosineSimilarityMagnitudeLoss(nn.Module):
         cos_similarity = self.cos_sim(predicted, target)
         cos_loss = 1 - cos_similarity  # (1 - cosine similarity)
 
-        # Magnitude term (L1)
-        predicted_magnitude = torch.norm(predicted, dim=-1)  # L1 norm along the last dimension
-        target_magnitude = torch.norm(target, dim=-1)
-        magnitude_loss = torch.abs(predicted_magnitude - target_magnitude)
+        # Element-wise L2 loss (Euclidean distance between predicted and target vectors)
+        elementwise_l2_loss = torch.norm(predicted - target, p=2, dim=-1)  # L2 norm between vectors element-wise
+        
+        # Normalize the elementwise L2 loss by the average magnitude of the target vector
+        target_magnitude = torch.norm(target, p=2, dim=-1)  # L2 norm (magnitude) of target
+        norm_factor = target_magnitude.mean().detach() if target_magnitude.mean() > 0 else 1.0
+        
+        # If norm_factor is too small or zero, just use L2 loss without scaling
+        normalized_magnitude_loss = elementwise_l2_loss / norm_factor
 
         # Combine losses
-        total_loss = self.lambda_cos * cos_loss + self.lambda_mag * magnitude_loss
-        return total_loss.mean(), cos_loss.mean(), magnitude_loss.mean()  # Return both individual losses
+        total_loss = self.lambda_cos * cos_loss + self.lambda_mag * normalized_magnitude_loss
+        return total_loss.mean(), cos_loss.mean(), normalized_magnitude_loss.mean()  # Return both individual losses
 
 class SetFormerLightning(pl.LightningModule):
     def __init__(self, model: SetFormer, model_config_dict: dict):
@@ -38,7 +43,8 @@ class SetFormerLightning(pl.LightningModule):
         self.model = model
         self.model_config_dict = model_config_dict
         self.criterion = CosineSimilarityMagnitudeLoss(
-            lambda_cos=1.0, lambda_mag=0.3
+            lambda_cos=self.model_config_dict['training_hps']['cos_sim_loss_weight'], 
+            lambda_mag=self.model_config_dict['training_hps']['magnitude_loss_weight']
         )
 
     def forward(self, x):
@@ -71,7 +77,7 @@ class SetFormerLightning(pl.LightningModule):
         
         # Define the StepLR scheduler
         scheduler = {
-            'scheduler': torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.75),
+            'scheduler': torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.75),
             'interval': 'epoch',  # Apply every epoch
             'frequency': 1,       # Apply once every epoch
         }
@@ -176,13 +182,18 @@ class LiveLossPlotCallback(pl.Callback):
         # Create a figure with 3 subplots (one for each loss)
         plt.figure(figsize=(18, 6))
 
+        # Adjust validation data to exclude the first element
+        val_iterations = self.iterations[1:]  # Skip the first iteration ('E-BeforeTraining')
+        val_losses = self.val_losses[1:] if len(self.val_losses) > 1 else []
+        val_cos_losses = self.val_cos_losses[1:] if len(self.val_cos_losses) > 1 else []
+        val_mag_losses = self.val_mag_losses[1:] if len(self.val_mag_losses) > 1 else []
+
         # First subplot for Total Loss (train and validation)
         plt.subplot(1, 3, 1)  # (rows, columns, index)
-        plt.plot(self.iterations, self.val_losses, label="Validation Loss", marker='o', color='red')
-        if self.train_losses != []:
-            iters_for_train = self.iterations.copy()
-            iters_for_train.pop(0)
-            plt.plot(iters_for_train, self.train_losses, label="Training Loss", marker='o', color='blue')
+        if val_losses:
+            plt.plot(val_iterations, val_losses, label="Validation Loss", marker='o', color='red')
+        if self.train_losses:
+            plt.plot(self.iterations[1:], self.train_losses, label="Training Loss", marker='o', color='blue')
         plt.xlabel("Epoch")
         plt.ylabel("Loss")
         plt.title("Total Loss (Training and Validation)")
@@ -192,11 +203,10 @@ class LiveLossPlotCallback(pl.Callback):
 
         # Second subplot for Cosine Loss (train and validation)
         plt.subplot(1, 3, 2)
-        plt.plot(self.iterations, self.val_cos_losses, label="Validation Cosine Loss", marker='x', color='red')
-        if self.train_cos_losses != []:
-            iters_for_train = self.iterations.copy()
-            iters_for_train.pop(0)
-            plt.plot(iters_for_train, self.train_cos_losses, label="Training Cosine Loss", marker='x', color='blue')
+        if val_cos_losses:
+            plt.plot(val_iterations, val_cos_losses, label="Validation Cosine Loss", marker='x', color='red')
+        if self.train_cos_losses:
+            plt.plot(self.iterations[1:], self.train_cos_losses, label="Training Cosine Loss", marker='x', color='blue')
         plt.xlabel("Epoch")
         plt.ylabel("Loss")
         plt.title("Cosine Loss (Training and Validation)")
@@ -206,11 +216,10 @@ class LiveLossPlotCallback(pl.Callback):
 
         # Third subplot for Magnitude Loss (train and validation)
         plt.subplot(1, 3, 3)
-        plt.plot(self.iterations, self.val_mag_losses, label="Validation Magnitude Loss", marker='s', color='red')
-        if self.train_mag_losses != []:
-            iters_for_train = self.iterations.copy()
-            iters_for_train.pop(0)
-            plt.plot(iters_for_train, self.train_mag_losses, label="Training Magnitude Loss", marker='s', color='blue')
+        if val_mag_losses:
+            plt.plot(val_iterations, val_mag_losses, label="Validation Magnitude Loss", marker='s', color='red')
+        if self.train_mag_losses:
+            plt.plot(self.iterations[1:], self.train_mag_losses, label="Training Magnitude Loss", marker='s', color='blue')
         plt.xlabel("Epoch")
         plt.ylabel("Loss")
         plt.title("Magnitude Loss (Training and Validation)")

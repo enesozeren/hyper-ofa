@@ -61,7 +61,7 @@ def create_target_embeddings(source_tokenizer, target_tokenizer, source_matrix, 
 if __name__ == '__main__':
     # Arguments
     parser = argparse.ArgumentParser(description='Create target-language embedding matrix')
-    parser.add_argument('--source_model_name', type=str, default='xlm-roberta-base', help='source model params')
+    parser.add_argument('--source_model_name', type=str, required=True, help='source model params')
     parser.add_argument('--target_model_name', type=str, default='cis-lmu/glot500-base', help='target model params')
     parser.add_argument('--source_matrix_path', type=str, required=True, help='source matrix path')
     parser.add_argument('--setformer_predictions_path', type=str, required=True, 

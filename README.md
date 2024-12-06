@@ -6,9 +6,9 @@ To create mapping dataset use
 ```bash
 python ofa/create_mapping_dataset.py \
 --word_vec_embedding_path colexnet_vectors/colexnet_vectors_minlang_50_200_10_updated.wv \
---source_model_name roberta-base \
+--source_model_name xlm-roberta-base \
 --target_model_name cis-lmu/glot500-base \
---keep_dim 100 \
+--keep_dim 400 \
 --output_dir outputs \
 --setformer_config_path setformer/configs/setformer_config.yaml
 ```
@@ -28,8 +28,8 @@ python ofa/mapping_model_inference.py \
 --test_or_inference test \
 --source_matrix_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/source_matrix.npy \
 --setformer_config_path setformer/configs/setformer_config.yaml \
---test_inference_mapping_data_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-05_13-40-40/test_mapping_set.pkl \
---checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-05_13-40-40/checkpoints/model-epoch=22-val_loss=0.7578.ckpt
+--test_inference_mapping_data_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-05_20-58-11/test_mapping_set.pkl \
+--checkpoint_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-05_20-58-11/checkpoints/model-epoch=19-val_loss=0.8453.ckpt
 ```
 
 To make inference with setformer use
@@ -38,7 +38,7 @@ python ofa/mapping_model_inference.py \
 --test_or_inference inference \
 --setformer_config_path setformer/configs/setformer_config.yaml \
 --test_inference_mapping_data_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/target_subword_to_word_mapping.pkl \
---checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-05_13-40-40/checkpoints/model-epoch=22-val_loss=0.7578.ckpt \
+--checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-06_02-27-50/checkpoints/model-epoch=15-val_loss=5.5796.ckpt \
 --keep_dim 100
 ```
 
@@ -46,7 +46,8 @@ To create the target matrix use
 ```bash
 python ofa/init_target_matrix.py \
 --source_matrix_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/source_matrix.npy \
---setformer_predictions_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-05_13-40-40/inference_logs/prediction_dict.pkl
+--source_model_name xlm-roberta-base \
+--setformer_predictions_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-06_02-27-50/inference_logs/prediction_dict.pkl
 ```
 
 ## Evaluation steps
@@ -54,6 +55,10 @@ python ofa/init_target_matrix.py \
 To perform Retrieval bible test, go to the .sh file below and edit the paths, and then run it with bash command
 ```bash
 bash evaluation/retrieval/evaluate_retrieval_bible_xlm.sh
+```
+
+```bash
+bash evaluation/retrieval/evaluate_retrieval_tatoeba_xlm.sh
 ```
 
 # OLD README

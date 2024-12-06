@@ -9,4 +9,4 @@ setformer/training_logs/*
 evaluation/retrieval/bible
 evaluation/retrieval/bible_tokenized_xlm_r_glot500
 evaluation/retrieval/tatoeba
-evaluation/retrieval/tatoeba_tokenized_xlm_v_glot500
+evaluation/retrieval/tatoeba_tokenized_xlm_r_glot500

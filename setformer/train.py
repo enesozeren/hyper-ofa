@@ -26,6 +26,7 @@ def train(model: SetFormer, model_config_dict: dict,
     :param val_loader: The validation dataloader
     :param output_dir: The output directory for the setformer model training logs
     '''
+    torch.set_float32_matmul_precision('high')
     
     # Save the model config for future reference
     with open(os.path.join(output_dir, "model_config.yaml"), 'w') as file:
