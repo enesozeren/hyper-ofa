@@ -73,7 +73,9 @@ class SetFormerLightning(pl.LightningModule):
         self.log('val_mag_loss', mag_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.model_config_dict['training_hps']['lr'])
+        optimizer = torch.optim.Adam(self.model.parameters(), 
+                                     lr=self.model_config_dict['training_hps']['lr'],
+                                     weight_decay=self.model_config_dict['training_hps']['weight_decay'])
         
         # Define the StepLR scheduler
         scheduler = {
