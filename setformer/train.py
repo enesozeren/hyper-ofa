@@ -82,8 +82,15 @@ def train_setformer(setformer_config_dict: dict, multilingual_embeddings: WordEm
                          cls_idx=setformer_config_dict['model_hps']['padding_idx'])
     
     # Prepare datasets and dataloaders    
-    train_set = OFADataset(train_input_target_pairs['inputs'], train_input_target_pairs['targets'])
-    val_set = OFADataset(val_input_target_pairs['inputs'], val_input_target_pairs['targets'])
+    train_set = OFADataset(train_input_target_pairs['inputs'], train_input_target_pairs['targets'],
+                            max_context_size=setformer_config_dict['model_hps']['max_context_size'],
+                            augment=True, 
+                            augmentation_threshold=setformer_config_dict['training_hps']['augmentation_threshold'], 
+                            min_percentage=setformer_config_dict['training_hps']['augmentation_min_percentage'], 
+                            max_percentage=setformer_config_dict['training_hps']['augmentation_max_percentage'])
+    val_set = OFADataset(val_input_target_pairs['inputs'], val_input_target_pairs['targets'],
+                            max_context_size=setformer_config_dict['model_hps']['max_context_size'],
+                            augment=False)
 
     train_loader = DataLoader(train_set, batch_size=setformer_config_dict['training_hps']['batch_size'], 
                               shuffle=True, collate_fn=collate_fn, num_workers=setformer_config_dict['training_hps']['num_workers'],

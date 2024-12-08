@@ -17,8 +17,8 @@ To train setformer use
 ```bash
 python ofa/train_mapping_model.py \
 --word_vec_embedding_path colexnet_vectors/colexnet_vectors_minlang_50_200_10_updated.wv \
---keep_dim 100 \
---mapping_data_dir outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data \
+--keep_dim 400 \
+--mapping_data_dir outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data \
 --setformer_config_path setformer/configs/setformer_config.yaml
 ```
 
@@ -37,17 +37,17 @@ To make inference with setformer use
 python ofa/mapping_model_inference.py \
 --test_or_inference inference \
 --setformer_config_path setformer/configs/setformer_config.yaml \
---test_inference_mapping_data_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/target_subword_to_word_mapping.pkl \
---checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-06_02-27-50/checkpoints/model-epoch=15-val_loss=5.5796.ckpt \
---keep_dim 100
+--test_inference_mapping_data_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data/target_subword_to_word_mapping.pkl \
+--checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2024-12-08_16-01-26/checkpoints/model-epoch=29-val_loss=5.7773.ckpt \
+--keep_dim 400
 ```
 
 To create the target matrix use
 ```bash
 python ofa/init_target_matrix.py \
---source_matrix_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/source_matrix.npy \
+--source_matrix_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data/source_matrix.npy \
 --source_model_name xlm-roberta-base \
---setformer_predictions_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-06_02-27-50/inference_logs/prediction_dict.pkl
+--setformer_predictions_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2024-12-08_16-01-26/inference_logs/prediction_dict.pkl
 ```
 
 ## Evaluation steps

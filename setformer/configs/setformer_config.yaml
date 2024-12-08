@@ -1,5 +1,5 @@
 model_hps:
-  num_layers: 8             # Number of transformer layers
+  num_layers: 12            # Number of transformer layers
   emb_dim: 200              # Dimension of word vectors
   num_heads: 10             # Number of attention heads
   dim_feedforward: 800      # Dimension of feed-forward layers
@@ -9,12 +9,15 @@ model_hps:
   cls_idx: 3610268          # CLS token idx
 
 training_hps:
-  batch_size: 128
-  lr: 0.0001
+  batch_size: 1024
+  lr: 0.001
   weight_decay: 0.001
   cos_sim_loss_weight: 1.0
   magnitude_loss_weight: 5.0
-  epochs: 30
+  epochs: 40
+  augmentation_threshold: 10
+  augmentation_min_percentage: 0.5
+  augmentation_max_percentage: 1.0
   num_workers: 8            # Number of workers for data loading
 
 notes: >

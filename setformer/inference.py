@@ -34,12 +34,12 @@ def setformer_inference(checkpoint_path, setformer_config_dict: dict,
     target_subword_idxs = list(mapping_data.keys())
 
     input_target_pairs = create_input_target_pairs(subword_to_word_mapping=mapping_data,
-                                                   source_matrix=source_matrix,
-                                                   max_context_size=setformer_config_dict['model_hps']['max_context_size'],
-                                                   train=False)
+                                                   source_matrix=source_matrix)
 
     # Create the dataset
-    dataset = OFADataset(input_target_pairs['inputs'], input_target_pairs['targets'])
+    dataset = OFADataset(input_target_pairs['inputs'], input_target_pairs['targets'],
+                         max_context_size=setformer_config_dict['model_hps']['max_context_size'],
+                         augment=False)
     print(f"Number of samples in the dataset: {len(dataset)}")
 
     # Create collate_fn for the dataloader
