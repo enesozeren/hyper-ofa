@@ -5,7 +5,7 @@ import random
 
 class OFADataset(Dataset):
     def __init__(self, inputs, targets, max_context_size, augment=False, 
-                    augmentation_threshold, min_percentage, max_percentage):
+                    augmentation_threshold=10, min_percentage=0.5, max_percentage=1.0):
         """
         Args:
             inputs (list of list): List of input vectors (each input is a list of vectors).
