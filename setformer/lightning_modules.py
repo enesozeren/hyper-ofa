@@ -79,7 +79,9 @@ class SetFormerLightning(pl.LightningModule):
         
         # Define the StepLR scheduler
         scheduler = {
-            'scheduler': torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.75),
+            'scheduler': torch.optim.lr_scheduler.StepLR(optimizer, 
+                                                        step_size=self.model_config_dict['training_hps']['lr_sched_step_size'],
+                                                        gamma=self.model_config_dict['training_hps']['lr_sched_gamma']),
             'interval': 'epoch',  # Apply every epoch
             'frequency': 1,       # Apply once every epoch
         }
