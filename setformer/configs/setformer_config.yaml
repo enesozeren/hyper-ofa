@@ -1,6 +1,6 @@
 model_hps:
-  num_layers: 4             # Number of transformer layers
-  emb_dim: 200              # Dimension of word vectors
+  num_layers: 8             # Number of transformer layers
+  emb_dim: 200              # Dimension of word vectors (colexnet)
   num_heads: 10             # Number of attention heads
   dim_feedforward: 800      # Dimension of feed-forward layers
   dropout: 0.2              # Dropout rate
@@ -9,14 +9,14 @@ model_hps:
   cls_idx: 3610268          # CLS token idx
 
 training_hps:
-  batch_size: 1024
+  batch_size: 128
   lr: 0.001
   lr_sched_step_size: 5
   lr_sched_gamma: 0.95
   weight_decay: 0.001
   cos_sim_loss_weight: 1.0
-  magnitude_loss_weight: 2.0
-  epochs: 100
+  magnitude_loss_weight: 3000.0
+  epochs: 30
   augmentation_threshold: 4
   augmentation_min_percentage: 0.5
   augmentation_max_percentage: 1.0

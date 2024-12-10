@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 class SetFormer(nn.Module):
     def __init__(self, emb_dim, num_heads, num_layers, dim_feedforward, 
@@ -19,23 +20,26 @@ class SetFormer(nn.Module):
 
         self.context_size = context_size
         self.padding_idx = padding_idx
+        
         # The external word vectors will be the embedding layer and will be frozen
         self.word_vector_emb_layer = nn.Embedding.from_pretrained(embeddings=word_vector_emb, 
                                                                   freeze=True, 
                                                                   padding_idx=padding_idx)
+        
         # Dropout layer
         self.dropout = nn.Dropout(p=dropout)
+        
         # An Encoder block to process the input
         encoder_layer = nn.TransformerEncoderLayer(d_model=emb_dim, nhead=num_heads, 
                                                    dim_feedforward=dim_feedforward, 
                                                    dropout=dropout, batch_first=True)
         self.encoder_block = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+        
         # Output layers for the CLS token
-        self.output_layer_1 = nn.Linear(emb_dim, dim_feedforward)
-        self.relu = nn.ReLU()
-        self.output_layer_2 = nn.Linear(dim_feedforward, output_dim)
+        self.output_layer = nn.Linear(emb_dim, output_dim)
+
         # Output scaling layer
-        self.output_scale = nn.Parameter(torch.tensor(0.00001))  # Initialize with a small scale
+        self.output_scale = nn.Parameter(torch.tensor(0.001))  # Initialize with a small scale
 
     def forward(self, x):
         '''
@@ -46,15 +50,19 @@ class SetFormer(nn.Module):
     
         # Get the embeddings
         x = self.word_vector_emb_layer(x) # (batch_size, context_size, emb_dim)
+        
         # Apply dropout
         x = self.dropout(x) # (batch_size, context_size, emb_dim)
+        
         # Pass the embeddings through the transformer encoder
         x = self.encoder_block(x, src_key_padding_mask=padding_mask) # (batch_size, context_size, emb_dim)
+        
         # Get the CLS token in the first dimension
         x = x[:, 0, :]
+        
         # Feed the CLS token to the output layer
-        x = self.relu(self.output_layer_1(x)) # (batch_size, dim_feedforward)
-        x = self.output_layer_2(x) # (batch_size, output_dim)
+        x = self.output_layer(x) # (batch_size, output_dim)
+        
         # Apply scaling to the output since target outputs are very small (around e-5)
         x = self.output_scale * x
 
