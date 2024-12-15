@@ -100,10 +100,6 @@ def main():
     parser.add_argument('--output_dir', type=str, default='outputs', 
                         help='output directory to save the ofa dataset')
 
-    # setformer model hp related
-    parser.add_argument('--setformer_config_path', type=str, default='setformer/configs/setformer_config.yaml',
-                        help='setformer model hyperparameters config path')
-
     args = parser.parse_args()
 
     output_path = os.path.join(
