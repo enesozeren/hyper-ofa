@@ -6,7 +6,15 @@ notebooks/*
 datasets
 setformer/training_logs/*
 .vscode
+*.sbatch
+*.log
+
+# Evaluation results
 evaluation/retrieval/bible
 evaluation/retrieval/bible_tokenized_xlm_r_glot500
 evaluation/retrieval/tatoeba
 evaluation/retrieval/tatoeba_tokenized_xlm_r_glot500
+evaluation/retrieval/bible_tokenized_roberta_glot500
+evaluation/retrieval/tatoeba_tokenized_roberta_glot500
+evaluation/tagging/ner
+evaluation/tagging/ner_tokenized_glot500

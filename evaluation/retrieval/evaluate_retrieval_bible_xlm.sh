@@ -20,7 +20,7 @@ MAX_LENGTH=512
 LC=""
 BATCH_SIZE=128
 DIM=768
-NUM_PRIMITIVE=200
+NUM_PRIMITIVE=400
 NLAYER=12
 LAYER=7
 # set use_initialization "true" to use models with initialization
@@ -33,7 +33,7 @@ RANDOM_INITIALIZATION="false"
 DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/retrieval_bible_test/"
 OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/retrieval/bible/"
 TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/retrieval/bible_tokenized_xlm_r"
-EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-200/setformer_training_logs/2024-12-16_00-00-31/wiserofa_xlm_all_200"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2024-12-16_09-11-52/wiserofa_xlm_all_400"
 
 python -u evaluation/retrieval/evaluate_retrieval_bible.py \
     --model_type $MODEL_TYPE \

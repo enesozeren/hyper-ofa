@@ -19,12 +19,12 @@
 from __future__ import absolute_import, division, print_function
 
 import sys
-sys.path.append('/mounts/data/proj/ayyoobbig/ofa/')
 import argparse
 import glob
 import logging
 import os
 import random
+import re
 
 import numpy as np
 import torch
@@ -33,9 +33,9 @@ from torch.nn import CrossEntropyLoss
 from torch.utils.data import DataLoader, TensorDataset
 from torch.utils.data import RandomSampler, SequentialSampler
 from tqdm import tqdm, trange
-from utils_tag import convert_examples_to_features
-from utils_tag import get_labels
-from utils_tag import read_examples_from_file
+from evaluation.tagging.utils_tag import convert_examples_to_features
+from evaluation.tagging.utils_tag import get_labels
+from evaluation.tagging.utils_tag import read_examples_from_file
 
 from transformers import (
     AdamW,
@@ -50,13 +50,11 @@ from transformers import (
     RobertaForTokenClassification
 )
 
-
 # update below
 import copy
 from modeling_xlmr_extra import XLMRobertaAssembledForTokenClassification
 from modeling_roberta_extra import RobertaAssembledForTokenClassification
-from model_loader_extra import load_assembled_model, get_embedding_path
-
+from model_loader_extra import load_assembled_model
 
 
 logger = logging.getLogger(__name__)
@@ -74,6 +72,25 @@ def set_seed(args):
     if args.n_gpu > 0:
         torch.cuda.manual_seed_all(args.seed)
 
+def calculate_mean_metrics(file_path):
+    metrics = {
+        'f1': [],
+        'loss': [],
+        'precision': [],
+        'recall': []
+    }
+    
+    with open(file_path, 'r') as file:
+        for line in file:
+            # Extract metric values using regex
+            for key in metrics.keys():
+                match = re.search(rf"{key} = ([\d.]+)", line)
+                if match:
+                    metrics[key].append(float(match.group(1)))
+    
+    # Calculate mean for each metric
+    mean_metrics = {key: sum(values) / len(values) if values else None for key, values in metrics.items()}
+    return mean_metrics
 
 def train(args, train_dataset, model, tokenizer, labels, pad_token_label_id, lang2id=None):
     """Train the model."""
@@ -431,10 +448,10 @@ def run(args):
         tokenizer_class = XLMRobertaTokenizer
         if args.checkpoint_num == 0 and args.use_initialization:
             config = config_class.from_pretrained(args.model_name_or_path, num_labels=num_labels)
-            logger.info(f"Loading model from {args.embedding_path} without continue pretraining!")
+            logger.info(f"Loading model from {args.embedding_dir} without continue pretraining!")
 
             # the masked language model
-            loaded_model = load_assembled_model(args.model_name_or_path, args.num_primitive, args.only_eng_vocab, args.embedding_path, args.random_initialization)
+            loaded_model = load_assembled_model(args.model_name_or_path, args.num_primitive, args.embedding_dir, args.random_initialization)
             config.num_primitive = args.num_primitive
             config.vocab_size = loaded_model.config.vocab_size
 
@@ -583,6 +600,14 @@ def run(args):
                 infile = os.path.join(args.tokenized_dir, lang, "test")
                 idxfile = infile + '.idx'
                 save_predictions(args, predictions, output_test_predictions_file, infile, idxfile)
+            
+            # Calculate and write mean metrics at the end
+            mean_metrics = calculate_mean_metrics(output_test_results_file)
+            result_writer.write("\n=====================\nAVERAGE METRICS\n")
+            for key, value in sorted(mean_metrics.items()):
+                if value is not None:
+                    result_writer.write("{} = {:.4f}\n".format(key, value))
+                    logger.info("Average {} = {:.4f}".format(key, value))
 
     # Predict dev set
     if args.do_predict_dev and args.local_rank in [-1, 0]:

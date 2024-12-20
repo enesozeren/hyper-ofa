@@ -21,15 +21,14 @@ class CosineSimilarityMagnitudeLoss(nn.Module):
 
         # Cosine similarity term
         cos_similarity = self.cos_sim(predicted, target)
-        cos_loss = 1 - cos_similarity  # (1 - cosine similarity)
+        cos_loss = 1 - cos_similarity
 
-        # Element-wise L2 loss (Euclidean distance between predicted and target vectors)
+        # Element-wise L1 loss
         elementwise_l1_loss = torch.norm(predicted - target, p=1, dim=-1)  # L1 norm between vectors element-wise
         
         # Normalize the elementwise L1 loss by the magnitude of the target vector
         target_magnitude = torch.norm(target, p=1, dim=-1)  # L1 norm (magnitude) of target
         norm_factor = target_magnitude.detach()
-        
         normalized_magnitude_loss = elementwise_l1_loss / norm_factor
 
         # Combine losses

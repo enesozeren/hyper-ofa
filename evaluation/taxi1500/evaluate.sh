@@ -15,16 +15,18 @@
 
 #MODEL=${1:-cis-lmu/glot500-base}
 MODEL="roberta-base"
-GPU=${2:-0}
-
-export CUDA_VISIBLE_DEVICES=$GPU
 MODEL_TYPE="roberta"
 
 NUM_PRIMITIVE=400
-checkpoint_num=260000
 
-OUTPUT_DIR="/mounts/data/proj/ayyoobbig/ofa/evaluation/texi1500/results/"
-init_checkpoint="/mounts/data/proj/ayyoobbig/ofa/trained_models/updated/"
+USE_INITIALIZATION="true"
+CHECKPOINT_NUM=0
+RANDOM_INITIALIZATION="false"
+
+DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/retrieval_bible_test/"
+OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/taxi1500/taxi_results/"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2024-12-17_11-13-07/wiserofa_rob_all_400"
+
 
 python -u evaluate.py \
     --model_type $MODEL_TYPE \
@@ -32,8 +34,9 @@ python -u evaluate.py \
     --output_dir $OUTPUT_DIR \
     --epochs 40 \
     --only_eng_vocab "false" \
-    --use_initialization "true" \
-    --random_initialization "false" \
-    --checkpoint_num $checkpoint_num \
+    --use_initialization $USE_INITIALIZATION \
+    --random_initialization $RANDOM_INITIALIZATION \
+    --checkpoint_num $CHECKPOINT_NUM \
     --num_primitive $NUM_PRIMITIVE \
-    --init_checkpoint $init_checkpoint
+    --init_checkpoint 0 \
+    --embedding_dir $EMBEDDING_DIR

@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/mounts/data/proj/ayyoobbig/ofa/')
+# sys.path.append('/mounts/data/proj/ayyoobbig/ofa/')
 import argparse
 import glob
 import logging
@@ -401,14 +401,13 @@ def main():
 
     # update below
     parser.add_argument("--num_primitive", type=int, default=768)
-    parser.add_argument("--embedding_path", type=str,
-                        default="/mounts/data/proj/yihong/newhome/OFA/stored_factorization/updated"
-                        )
+    parser.add_argument("--embedding_dir", type=str, required=True, 
+                        help="Path to the embeddings (primitive and target matrices) directory")
     parser.add_argument("--only_eng_vocab", type=bool_flag, default=False)
     parser.add_argument("--use_initialization", type=bool_flag, default=True)
     parser.add_argument("--random_initialization", type=bool_flag, default=False)
     # when checkpoint number is zero, loading the model without continue training
-    parser.add_argument("--checkpoint_num", type=int, default=180000)
+    parser.add_argument("--checkpoint_num", type=int, default=0)
     parser.add_argument(
         "--tokenized_dir",
         default=None,
@@ -416,7 +415,8 @@ def main():
         required=False,
         help="The input data dir in which the tokenized are stored (optional).",
     )
-
+    
+    # I DON'T HAVE THIS DATASETS???
     parser.add_argument("--eng_data_dir", type=str,
                         default='/mounts/data/proj/chunlan/Taxi1500_data/Glot500_data/eng_data')
     parser.add_argument("--test_data_dir", type=str,
@@ -431,12 +431,10 @@ def main():
         lang = file.split('_')[0]
         args.predict_langs.append(lang)
 
-    # updated below
     if args.init_checkpoint:
         # in this case, the tokenizer should all be glot500 tokenizer
         if args.use_initialization:
-            embedding_name = get_embedding_path(args.model_name_or_path, args.num_primitive, args.only_eng_vocab,
-                                                args.random_initialization)
+            embedding_name = args.embedding_dir.split('/')[-1]
             args.init_checkpoint += f"LM_ofa_{embedding_name}/checkpoint-{str(args.checkpoint_num)}"
         else:
             args.init_checkpoint += f"{args.model_name_or_path}/checkpoint-{str(args.checkpoint_num)}"
