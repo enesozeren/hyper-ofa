@@ -43,21 +43,19 @@ class ContrastiveL1Loss(nn.Module):
         # Cross-entropy loss for contrastive alignment
         contrastive_loss = F.cross_entropy(logits, labels)
 
-        # **L1 Loss Component**
-        # Compute L1 loss between predicted and target
-        elementwise_l1_loss = torch.abs(predicted - target).sum(dim=-1)
+        # **Magnitude Normalization Loss Component**
+        # Element-wise L1 loss
+        elementwise_l1_loss = torch.norm(predicted - target, p=1, dim=-1)
 
-        # Normalize by vector size (L2 norm of the vector), with detachment
-        vector_sizes = torch.norm(target, p=2, dim=-1).detach()  # Detach to prevent gradient flow
-        normalized_l1_loss = elementwise_l1_loss / vector_sizes.clamp(min=1e-9)  # Avoid division by zero
-
-        # Mean over batch for the total L1 loss
-        normalized_l1_loss_mean = normalized_l1_loss.mean()
+        # Normalize the elementwise L1 loss by the magnitude of the target vector
+        target_magnitude = torch.norm(target, p=1, dim=-1)
+        norm_factor = target_magnitude.detach()  # Prevent gradients through normalization
+        normalized_magnitude_loss = elementwise_l1_loss / norm_factor
 
         # **Combine Losses**
-        total_loss = self.loss_scale_constant * (contrastive_loss + normalized_l1_loss_mean)
+        total_loss = self.loss_scale_constant * (contrastive_loss + normalized_magnitude_loss.mean())
 
-        return total_loss, contrastive_loss, normalized_l1_loss_mean        
+        return total_loss, contrastive_loss, normalized_magnitude_loss.mean()      
 
 class SetFormerLightning(pl.LightningModule):
     def __init__(self, model: SetFormer, model_config_dict: dict):
@@ -223,6 +221,12 @@ class LiveLossPlotCallback(pl.Callback):
         val_mag_losses = self.val_mag_losses[1:] if len(self.val_mag_losses) > 1 else []
         val_cos_sim = self.val_cos_sim[1:] if len(self.val_cos_sim) > 1 else []
         
+        # Dynamically determine x-axis tick spacing
+        total_epochs = len(self.iterations)
+        max_ticks = 10  # Maximum number of ticks on the x-axis
+        tick_spacing = max(1, total_epochs // max_ticks)  # Calculate tick spacing
+        x_ticks = [i for i in range(0, total_epochs, tick_spacing)]  # Select tick positions
+        x_tick_labels = [self.iterations[i] for i in x_ticks]  # Get corresponding labels
 
         # First subplot for Total Loss (train and validation)
         plt.subplot(2, 2, 1)  # (rows, columns, index)
@@ -233,7 +237,7 @@ class LiveLossPlotCallback(pl.Callback):
         plt.xlabel("Epoch")
         plt.ylabel("Loss")
         plt.title("Total Loss (Training and Validation)")
-        plt.xticks(rotation=45, ha="right")
+        plt.xticks(ticks=x_ticks, labels=x_tick_labels, rotation=45, ha="right")
         plt.legend()
         plt.grid(True)
 
@@ -246,7 +250,7 @@ class LiveLossPlotCallback(pl.Callback):
         plt.xlabel("Epoch")
         plt.ylabel("Loss")
         plt.title("Contrastive Loss (Training and Validation)")
-        plt.xticks(rotation=45, ha="right")
+        plt.xticks(ticks=x_ticks, labels=x_tick_labels, rotation=45, ha="right")
         plt.legend()
         plt.grid(True)
 
@@ -259,7 +263,7 @@ class LiveLossPlotCallback(pl.Callback):
         plt.xlabel("Epoch")
         plt.ylabel("Loss")
         plt.title("Magnitude Loss (Training and Validation)")
-        plt.xticks(rotation=45, ha="right")
+        plt.xticks(ticks=x_ticks, labels=x_tick_labels, rotation=45, ha="right")
         plt.legend()
         plt.grid(True)
 
@@ -270,7 +274,7 @@ class LiveLossPlotCallback(pl.Callback):
         plt.xlabel("Epoch")
         plt.ylabel("Cosine Similarity")
         plt.title("Cosine Similarity (Validation)")
-        plt.xticks(rotation=45, ha="right")
+        plt.xticks(ticks=x_ticks, labels=x_tick_labels, rotation=45, ha="right")
         plt.legend()
         plt.grid(True)
 
