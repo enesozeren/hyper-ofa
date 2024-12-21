@@ -37,7 +37,7 @@ python ofa/mapping_model_inference.py \
 --test_or_inference inference \
 --setformer_config_path setformer/configs/setformer_config.yaml \
 --test_inference_mapping_data_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data/target_subword_to_word_mapping.pkl \
---checkpoint_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2024-12-17_11-13-07/checkpoints/model-epoch=53-val_loss=5585.7573.ckpt \
+--checkpoint_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2024-12-21_13-33-07/checkpoints/model-epoch=249-val_loss=20.2108.ckpt \
 --keep_dim 400
 ```
 
@@ -46,7 +46,7 @@ To create the target matrix use
 python ofa/init_target_matrix.py \
 --source_matrix_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data/source_matrix.npy \
 --source_model_name roberta-base \
---setformer_predictions_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2024-12-17_11-13-07/inference_logs/prediction_dict.pkl
+--setformer_predictions_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2024-12-21_13-33-07/inference_logs/prediction_dict.pkl
 ```
 
 ## Evaluation steps
