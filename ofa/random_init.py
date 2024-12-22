@@ -1,59 +1,71 @@
-from utils import *
-from transformers import AutoModelForMaskedLM, AutoTokenizer
+import argparse
+import pickle
+import os
+from transformers import AutoTokenizer
+import numpy as np
+
+from ofa.utils import (
+    get_overlapping_tokens
+)
 
 
-def run_random_init(source_model_name, source_tokenizer, target_tokenizer, source_embeddings):
+def create_random_target_embeddings(source_tokenizer, target_tokenizer, source_matrix):
+    """
+    Create the target-language embedding matrix
+    :param source_tokenizer:
+    :param target_tokenizer:
+    :param source_matrix: the source-language PLM subword embedding
+    :return: the target-language embedding matrix
+    """
 
+    # all embeddings are initialized to zero first
+    target_matrix = np.zeros((len(target_tokenizer), source_matrix.shape[1]), dtype=source_matrix.dtype)
+    
+    # Find the overlapping tokens between source and target tokenizers
     overlapping_token_mapping = get_overlapping_tokens(target_tokenizer, source_tokenizer, fuzzy_search=True)
+    print(f"Overlapping tokens count: {len(overlapping_token_mapping)}")
 
-    mean, std = source_embeddings.mean(0), source_embeddings.std(0)
-    # initialize using the source_embeddings
-    random_fallback_matrix = \
-        np.random.RandomState(114514).normal(mean, std, (len(target_tokenizer.vocab), source_embeddings.shape[1]))
+    # Initialize the overlapping tokens in the target matrix from the source matrix
+    for target_idx, source_idx in overlapping_token_mapping.values():
+        target_matrix[target_idx] = source_matrix[source_idx]
+    
+    # Initialize the remaining tokens in the target matrix with random embeddings
+    random_init_token_counter = 0
+    mean, std = source_matrix.mean(0), source_matrix.std(0)
+    random_state = np.random.RandomState(0)
+    for target_idx, embedding in enumerate(target_matrix):
+        if np.all(embedding == 0):
+            target_matrix[target_idx] = random_state.normal(loc=mean, scale=std, size=embedding.shape[0])
+            random_init_token_counter += 1
+    print(f"Randomly initialized tokens count: {random_init_token_counter}")
 
-    random_fallback_matrix = random_fallback_matrix.astype(np.float32)
-
-    overlapping_tokens = {}
-    for overlapping_token, (target_vocab_idx, source_vocab_idx) in overlapping_token_mapping.items():
-        print(target_vocab_idx, source_vocab_idx)
-        overlapping_tokens[overlapping_token] = target_vocab_idx
-        random_fallback_matrix[target_vocab_idx] = source_embeddings[source_vocab_idx]
-
-    print(f"Num overlapping tokens: {len(overlapping_tokens)}")
-    # the subword tokens that need to be initialized
-    additional_tokens = {token: idx for token, idx in target_tokenizer.get_vocab().items()
-                         if token not in overlapping_tokens}
-    print(f"Num additional tokens: {len(additional_tokens)}")
-    assert len(overlapping_tokens) + len(additional_tokens) == len(target_tokenizer)
-
-    final_target_matrix = random_fallback_matrix
-    print(np.shape(final_target_matrix))
-    model_name = ''
-    if source_model_name == 'xlm-roberta-base':
-        model_name += 'xlm_'
-    elif source_model_name == 'roberta-base':
-        model_name += 'roberta_'
-    else:
-        raise ValueError("Models other than xlm-r or roberta are not considered!")
-
-    model_name += 'rand'
-
-    model_path = '/mounts/data/proj/yihong/newhome/OFA/stored_factorization/updated/' + model_name
-    if not os.path.exists(model_path):
-        os.makedirs(model_path)
-
-    np.save(f"{model_path}/target_matrix.npy", final_target_matrix)
+    return target_matrix
 
 
-source_model_name = 'roberta-base'
+if __name__ == '__main__':
+    # Arguments
+    parser = argparse.ArgumentParser(description='Create target-language random init embedding matrix')
+    parser.add_argument('--source_model_name', type=str, required=True, help='source model params')
+    parser.add_argument('--target_model_name', type=str, default='cis-lmu/glot500-base', help='target model params')
+    parser.add_argument('--source_matrix_path', type=str, required=True, help='source matrix path')
+    args = parser.parse_args()
 
-# loading tokenizers and source-model embeddings
-source_tokenizer = AutoTokenizer.from_pretrained(source_model_name)  # source tok
-target_tokenizer = AutoTokenizer.from_pretrained('cis-lmu/glot500-base')  # target tok
+    # Load source matrix
+    source_matrix = np.load(args.source_matrix_path)
+    # Load primitive_embeddings
+    primitive_embeddings = np.load(args.source_matrix_path.replace('source_matrix.npy', 'primitive_embeddings.npy'))
 
-source_model = AutoModelForMaskedLM.from_pretrained(source_model_name)
+    # loading tokenizers and source-model embeddings
+    source_tokenizer = AutoTokenizer.from_pretrained(args.source_model_name)  # source tok
+    target_tokenizer = AutoTokenizer.from_pretrained(args.target_model_name)  # target tok
 
-source_embeddings = source_model.get_input_embeddings().weight.detach().numpy()
-assert len(source_tokenizer) == len(source_embeddings)
-run_random_init(source_model_name, source_tokenizer, target_tokenizer, source_embeddings)
-print('done!')
+    target_matrix = create_random_target_embeddings(source_tokenizer, target_tokenizer, source_matrix)
+
+    output_dir = os.path.join('outputs', f'random_{args.source_model_name[:3]}_all_{target_matrix.shape[1]}')
+    
+    os.makedirs(output_dir, exist_ok=True)
+    # Save matrices
+    np.save(os.path.join(output_dir, 'target_matrix.npy'), target_matrix)
+    np.save(os.path.join(output_dir, 'source_matrix.npy'), source_matrix)
+    np.save(os.path.join(output_dir, 'primitive_embeddings.npy'), primitive_embeddings)
+
