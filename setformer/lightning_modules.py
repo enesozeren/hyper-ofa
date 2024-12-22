@@ -8,7 +8,7 @@ import os
 import pickle
 from tqdm import tqdm
 
-class ContrastiveL1Loss(nn.Module):
+class ContrastiveMagnitudeLoss(nn.Module):
     def __init__(self, temperature=0.5, loss_scale_constant=1.0):
         """
         Combines contrastive loss and L1 loss.
@@ -16,7 +16,7 @@ class ContrastiveL1Loss(nn.Module):
         :param temperature: Temperature scaling factor for contrastive loss.
         :param loss_scale_constant: Weight for the total loss.
         """
-        super(ContrastiveL1Loss, self).__init__()
+        super(ContrastiveMagnitudeLoss, self).__init__()
         self.loss_scale_constant = loss_scale_constant
         self.temperature = temperature
 
@@ -52,8 +52,13 @@ class ContrastiveL1Loss(nn.Module):
         norm_factor = target_magnitude.detach()  # Prevent gradients through normalization
         normalized_magnitude_loss = elementwise_l1_loss / norm_factor
 
+        # **Cosine Similarity Loss Component**
+        # Cosine similarity (higher similarity should reduce loss)
+        cosine_similarity = F.cosine_similarity(predicted, target, dim=-1)
+        cosine_similarity_loss = 1.0 - cosine_similarity.mean()  # Loss decreases as similarity increases
+    
         # **Combine Losses**
-        total_loss = self.loss_scale_constant * (contrastive_loss + normalized_magnitude_loss.mean())
+        total_loss = self.loss_scale_constant * (contrastive_loss + normalized_magnitude_loss.mean() + cosine_similarity_loss)
 
         return total_loss, contrastive_loss, normalized_magnitude_loss.mean()      
 
@@ -62,7 +67,7 @@ class SetFormerLightning(pl.LightningModule):
         super().__init__()
         self.model = model
         self.model_config_dict = model_config_dict
-        self.criterion = ContrastiveL1Loss(
+        self.criterion = ContrastiveMagnitudeLoss(
             temperature=self.model_config_dict['training_hps']['contrastive_temperature'], 
             loss_scale_constant=self.model_config_dict['training_hps']['loss_scale_constant']
         )

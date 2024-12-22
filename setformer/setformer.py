@@ -36,7 +36,12 @@ class SetFormer(nn.Module):
         self.encoder_block = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
         
         # Output layers for the CLS token
-        self.output_layer = nn.Linear(emb_dim, output_dim)
+        self.output_layers = nn.Sequential(
+            nn.Linear(emb_dim, 2*emb_dim),
+            nn.GELU(),
+            nn.Linear(2*emb_dim, output_dim),
+            nn.GELU()
+        )
 
         # Output scaling layer
         self.output_scale = nn.Parameter(torch.tensor(0.001))  # Initialize with a small scale
@@ -61,7 +66,7 @@ class SetFormer(nn.Module):
         x = x[:, 0, :]
         
         # Feed the CLS token to the output layer
-        x = self.output_layer(x) # (batch_size, output_dim)
+        x = self.output_layers(x) # (batch_size, output_dim)
         
         # Apply scaling to the output since target outputs are very small (around e-5)
         x = self.output_scale * x

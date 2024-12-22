@@ -17,7 +17,7 @@ To train setformer use
 python ofa/train_mapping_model.py \
 --word_vec_embedding_path colexnet_vectors/colexnet_vectors_minlang_50_200_10_updated.wv \
 --keep_dim 400 \
---mapping_data_dir outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data \
+--mapping_data_dir outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data \
 --setformer_config_path setformer/configs/setformer_config.yaml
 ```
 
@@ -36,17 +36,17 @@ To make inference with setformer use
 python ofa/mapping_model_inference.py \
 --test_or_inference inference \
 --setformer_config_path setformer/configs/setformer_config.yaml \
---test_inference_mapping_data_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data/target_subword_to_word_mapping.pkl \
---checkpoint_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2024-12-21_13-33-07/checkpoints/model-epoch=249-val_loss=20.2108.ckpt \
+--test_inference_mapping_data_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data/target_subword_to_word_mapping.pkl \
+--checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2024-12-21_18-12-10/checkpoints/model-epoch=249-val_loss=5.1084.ckpt \
 --keep_dim 400
 ```
 
 To create the target matrix use
 ```bash
 python ofa/init_target_matrix.py \
---source_matrix_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data/source_matrix.npy \
---source_model_name roberta-base \
---setformer_predictions_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2024-12-21_13-33-07/inference_logs/prediction_dict.pkl
+--source_matrix_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data/source_matrix.npy \
+--source_model_name xlm-roberta-base \
+--setformer_predictions_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2024-12-21_18-12-10/inference_logs/prediction_dict.pkl
 ```
 
 ## Evaluation steps
@@ -58,6 +58,14 @@ bash evaluation/retrieval/evaluate_retrieval_bible_xlm.sh
 
 ```bash
 bash evaluation/retrieval/evaluate_retrieval_tatoeba_xlm.sh
+```
+
+```bash
+bash evaluation/tagging/evaluate_ner.sh
+```
+
+```bash
+bash evaluation/tagging/evaluate_ner_xlmr.sh
 ```
 
 # OLD README
