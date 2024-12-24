@@ -37,7 +37,7 @@ MAX_LENGTH=256
 DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/ner/"
 OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/tagging/ner/"
 TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/tagging/ner_tokenized"
-EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-15_15-33-02/wiserofa_xlm_all_100"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/outputs/random_xlm_all_100"
 
 python -u evaluation/tagging/evaluate_ner.py \
     --model_type $MODEL_TYPE \

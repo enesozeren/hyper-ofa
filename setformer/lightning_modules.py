@@ -8,16 +8,13 @@ import os
 import pickle
 from tqdm import tqdm
 
-class ContrastiveMagnitudeLoss(nn.Module):
-    def __init__(self, temperature=0.5, loss_scale_constant=1.0):
+class ContrastiveLoss(nn.Module):
+    def __init__(self, temperature=0.1):
         """
-        Combines contrastive loss and L1 loss.
-        
-        :param temperature: Temperature scaling factor for contrastive loss.
-        :param loss_scale_constant: Weight for the total loss.
+        Contrastive loss
+        :param temperature: Temperature scaling factor for the loss.
         """
-        super(ContrastiveMagnitudeLoss, self).__init__()
-        self.loss_scale_constant = loss_scale_constant
+        super(ContrastiveLoss, self).__init__()
         self.temperature = temperature
 
     def forward(self, predicted, target):
@@ -26,50 +23,32 @@ class ContrastiveMagnitudeLoss(nn.Module):
         target = target.float()
 
         # **Contrastive Loss Component**
-        # Normalize predictions and targets for contrastive loss
-        predicted_norm = F.normalize(predicted, dim=1)
-        target_norm = F.normalize(target, dim=1)
+        # Compute pairwise distances
+        batch_size = predicted.size(0)
+        predicted_expanded = predicted.unsqueeze(1).expand(-1, batch_size, -1)
+        target_expanded = target.unsqueeze(0).expand(batch_size, -1, -1)
 
-        # Compute similarity matrix: (batch_size, batch_size)
-        similarity_matrix = torch.matmul(predicted_norm, target_norm.T)
+        # L2 distance between all pairs
+        distances = torch.norm(predicted_expanded - target_expanded, p=2, dim=-1)
 
-        # Scale similarity by temperature
-        logits = similarity_matrix / self.temperature
+        # Negate distances and scale by temperature to create logits
+        logits = -distances / self.temperature
 
         # Labels: Each sample's positive target is at the same index
-        batch_size = predicted.size(0)
         labels = torch.arange(batch_size, device=predicted.device)
 
         # Cross-entropy loss for contrastive alignment
         contrastive_loss = F.cross_entropy(logits, labels)
 
-        # **Magnitude Normalization Loss Component**
-        # Element-wise L1 loss
-        elementwise_l1_loss = torch.norm(predicted - target, p=1, dim=-1)
-
-        # Normalize the elementwise L1 loss by the magnitude of the target vector
-        target_magnitude = torch.norm(target, p=1, dim=-1)
-        norm_factor = target_magnitude.detach()  # Prevent gradients through normalization
-        normalized_magnitude_loss = elementwise_l1_loss / norm_factor
-
-        # **Cosine Similarity Loss Component**
-        # Cosine similarity (higher similarity should reduce loss)
-        cosine_similarity = F.cosine_similarity(predicted, target, dim=-1)
-        cosine_similarity_loss = 1.0 - cosine_similarity.mean()  # Loss decreases as similarity increases
-    
-        # **Combine Losses**
-        total_loss = self.loss_scale_constant * (contrastive_loss + normalized_magnitude_loss.mean() + cosine_similarity_loss)
-
-        return total_loss, contrastive_loss, normalized_magnitude_loss.mean()      
+        return contrastive_loss
 
 class SetFormerLightning(pl.LightningModule):
     def __init__(self, model: SetFormer, model_config_dict: dict):
         super().__init__()
         self.model = model
         self.model_config_dict = model_config_dict
-        self.criterion = ContrastiveMagnitudeLoss(
-            temperature=self.model_config_dict['training_hps']['contrastive_temperature'], 
-            loss_scale_constant=self.model_config_dict['training_hps']['loss_scale_constant']
+        self.criterion = ContrastiveLoss(
+            temperature=self.model_config_dict['training_hps']['contrastive_temperature']
         )
 
     def forward(self, x):
@@ -78,26 +57,22 @@ class SetFormerLightning(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         inputs, targets = batch
         outputs = self.model(inputs)
-        total_loss, contrastive_loss, mag_loss = self.criterion(outputs, targets)
+        train_loss = self.criterion(outputs, targets)
         
         # Log the losses separately
-        self.log('train_loss', total_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log('train_contrastive_loss', contrastive_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log('train_mag_loss', mag_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-        
-        return total_loss
+        self.log('train_loss', train_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+
+        return train_loss
 
     def validation_step(self, batch, batch_idx):
         inputs, targets = batch
         outputs = self.model(inputs)
-        total_loss, contrastive_loss, mag_loss = self.criterion(outputs, targets)
+        val_loss = self.criterion(outputs, targets)
         
         cosine_similarity = F.cosine_similarity(outputs, targets, dim=1).mean()
 
         # Log the losses separately
-        self.log('val_loss', total_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log('val_contrastive_loss', contrastive_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log('val_mag_loss', mag_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log('val_loss', val_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
         self.log('val_avg_cos_sim', cosine_similarity, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
 
     def configure_optimizers(self):
@@ -126,18 +101,16 @@ class SetFormerLightning(pl.LightningModule):
         outputs = self.model(inputs)
 
         # Calculate all three losses
-        total_loss, contrastive_loss, mag_loss = self.criterion(outputs, targets)
+        test_loss = self.criterion(outputs, targets)
 
         # Log the losses separately
-        self.log('test_loss', total_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log('test_contrastive_loss', contrastive_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log('test_mag_loss', mag_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log('test_loss', test_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
 
         # Calculate and log cosine similarity (if needed independently)
         cosine_similarity = torch.nn.functional.cosine_similarity(outputs, targets, dim=1).mean()
         self.log('avg_cos_sim', cosine_similarity, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
 
-        return {"test_loss": total_loss, "avg_cos_sim": cosine_similarity, "test_contrastive_loss": contrastive_loss, "test_mag_loss": mag_loss}
+        return {"test_loss": test_loss, "test_avg_cos_sim": cosine_similarity}
     
     def save_predictions(self, dataloader, target_subword_idxs: list, output_path, device):
         '''
@@ -173,13 +146,10 @@ class SetFormerLightning(pl.LightningModule):
 
 class LiveLossPlotCallback(pl.Callback):
     def __init__(self, save_dir="plots"):
+        
         self.train_losses = []  # Stores training total losses per epoch
         self.val_losses = []  # Stores validation total losses per epoch
         
-        self.train_contrastive_losses = []  # Stores training contrastive losses per epoch
-        self.val_contrastive_losses = []  # Stores validation contrastive similarity losses per epoch
-        self.train_mag_losses = []  # Stores training magnitude losses per epoch
-        self.val_mag_losses = []  # Stores validation magnitude losses per epoch
         self.val_cos_sim = []  # Stores validation cosine similarities per epoch
         
         self.iterations = []  # Stores (epoch, batch) for x-axis, but no batch-specific intervals
@@ -189,13 +159,7 @@ class LiveLossPlotCallback(pl.Callback):
     def on_train_epoch_end(self, trainer, pl_module):
         # Collect losses at the end of each epoch
         train_loss = trainer.callback_metrics.get('train_loss')
-        train_contrastive_loss = trainer.callback_metrics.get('train_contrastive_loss')
-        train_mag_loss = trainer.callback_metrics.get('train_mag_loss')
-        
         self.train_losses.append(train_loss.item())
-        self.train_contrastive_losses.append(train_contrastive_loss.item())
-        self.train_mag_losses.append(train_mag_loss.item())
-        
         self._save_plot()
 
     def on_validation_epoch_end(self, trainer, pl_module):
@@ -204,27 +168,16 @@ class LiveLossPlotCallback(pl.Callback):
             self.iterations.append(f'E-BeforeTraining')
         else:
             self.iterations.append(f'E-{trainer.current_epoch}')
-           
+        
         val_loss = trainer.callback_metrics.get('val_loss')
-        val_contrastive_loss = trainer.callback_metrics.get('val_contrastive_loss')
-        val_mag_loss = trainer.callback_metrics.get('val_mag_loss')
-        val_cos_sim = trainer.callback_metrics.get('val_avg_cos_sim')  # Get the cosine similarity
+        val_cos_sim = trainer.callback_metrics.get('val_avg_cos_sim')
 
         self.val_losses.append(val_loss.item())
-        self.val_contrastive_losses.append(val_contrastive_loss.item())
-        self.val_mag_losses.append(val_mag_loss.item())
-        self.val_cos_sim.append(val_cos_sim.item())  # Append cosine similarity
+        self.val_cos_sim.append(val_cos_sim.item())
 
     def _save_plot(self):
-        # Create a figure with 3 subplots (one for each loss)
-        plt.figure(figsize=(12, 12))
-
-        # Adjust validation data to exclude the first element
-        val_iterations = self.iterations[1:]  # Skip the first iteration ('E-BeforeTraining')
-        val_losses = self.val_losses[1:] if len(self.val_losses) > 1 else []
-        val_contrastive_losses = self.val_contrastive_losses[1:] if len(self.val_contrastive_losses) > 1 else []
-        val_mag_losses = self.val_mag_losses[1:] if len(self.val_mag_losses) > 1 else []
-        val_cos_sim = self.val_cos_sim[1:] if len(self.val_cos_sim) > 1 else []
+        # Create a figure with 2 subplots
+        plt.figure(figsize=(24, 12))
         
         # Dynamically determine x-axis tick spacing
         total_epochs = len(self.iterations)
@@ -233,10 +186,9 @@ class LiveLossPlotCallback(pl.Callback):
         x_ticks = [i for i in range(0, total_epochs, tick_spacing)]  # Select tick positions
         x_tick_labels = [self.iterations[i] for i in x_ticks]  # Get corresponding labels
 
-        # First subplot for Total Loss (train and validation)
-        plt.subplot(2, 2, 1)  # (rows, columns, index)
-        if val_losses:
-            plt.plot(val_iterations, val_losses, label="Validation Loss", marker='o', color='red')
+        # First subplot for Loss (train and validation)
+        plt.subplot(1, 2, 1)  # (rows, columns, index)
+        plt.plot(self.iterations, self.val_losses, label="Validation Loss", marker='o', color='red')
         if self.train_losses:
             plt.plot(self.iterations[1:], self.train_losses, label="Training Loss", marker='o', color='blue')
         plt.xlabel("Epoch")
@@ -246,36 +198,10 @@ class LiveLossPlotCallback(pl.Callback):
         plt.legend()
         plt.grid(True)
 
-        # Second subplot for Contrastive Loss (train and validation)
-        plt.subplot(2, 2, 2)
-        if val_contrastive_losses:
-            plt.plot(val_iterations, val_contrastive_losses, label="Validation Contrastive Loss", marker='x', color='red')
-        if self.train_contrastive_losses:
-            plt.plot(self.iterations[1:], self.train_contrastive_losses, label="Training Contrastive Loss", marker='x', color='blue')
-        plt.xlabel("Epoch")
-        plt.ylabel("Loss")
-        plt.title("Contrastive Loss (Training and Validation)")
-        plt.xticks(ticks=x_ticks, labels=x_tick_labels, rotation=45, ha="right")
-        plt.legend()
-        plt.grid(True)
-
-        # Third subplot for Magnitude Loss (train and validation)
-        plt.subplot(2, 2, 3)
-        if val_mag_losses:
-            plt.plot(val_iterations, val_mag_losses, label="Validation Magnitude Loss", marker='s', color='red')
-        if self.train_mag_losses:
-            plt.plot(self.iterations[1:], self.train_mag_losses, label="Training Magnitude Loss", marker='s', color='blue')
-        plt.xlabel("Epoch")
-        plt.ylabel("Loss")
-        plt.title("Magnitude Loss (Training and Validation)")
-        plt.xticks(ticks=x_ticks, labels=x_tick_labels, rotation=45, ha="right")
-        plt.legend()
-        plt.grid(True)
-
-        # Fourth subplot for Cosine Similarity (validation)
-        plt.subplot(2, 2, 4)
-        if val_cos_sim:
-            plt.plot(val_iterations, val_cos_sim, label="Validation Cosine Similarity", marker='d', color='green')
+        # Second subplot for Cosine Similarity (validation)
+        plt.subplot(1, 2, 2)
+        if self.val_cos_sim:
+            plt.plot(self.iterations, self.val_cos_sim, label="Validation Cosine Similarity", marker='d', color='green')
         plt.xlabel("Epoch")
         plt.ylabel("Cosine Similarity")
         plt.title("Cosine Similarity (Validation)")

@@ -1,22 +1,21 @@
 model_hps:
-  num_layers: 8             # Number of transformer layers
+  num_layers: 4            # Number of transformer layers
   emb_dim: 200              # Dimension of word vectors (colexnet)
   num_heads: 10             # Number of attention heads
   dim_feedforward: 800      # Dimension of feed-forward layers
-  dropout: 0.2              # Dropout rate
+  dropout: 0.1              # Dropout rate
   max_context_size: 128     # Max Context size for the set transformer
   padding_idx: 3610267      # PAD token idx
   cls_idx: 3610268          # CLS token idx
 
 training_hps:
-  batch_size: 1024
+  batch_size: 128
   lr: 0.001
-  lr_sched_step_size: 10
-  lr_sched_gamma: 0.95
-  weight_decay: 0.001
+  lr_sched_step_size: 5
+  lr_sched_gamma: 0.9
+  weight_decay: 0.0001
   contrastive_temperature: 0.1
-  loss_scale_constant: 1.0
-  epochs: 10
+  epochs: 50
   augmentation_threshold: 4
   augmentation_min_percentage: 0.5
   augmentation_max_percentage: 1.0
