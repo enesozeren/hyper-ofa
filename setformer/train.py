@@ -39,10 +39,10 @@ def train(model: SetFormer, model_config_dict: dict,
     checkpoint_callback = ModelCheckpoint(
         dirpath=os.path.join(output_dir, 'checkpoints'),
         filename='model-{epoch:02d}-{val_loss:.4f}',
-        save_top_k=5,
+        save_top_k=1,
         monitor='val_loss',
         mode='min',
-        every_n_epochs=10
+        every_n_epochs=20
     )
 
     # Live loss plot callback

@@ -43,6 +43,9 @@ class SetFormer(nn.Module):
             nn.GELU()
         )
 
+        # Initialize the outputs with a small scale
+        self.output_scale_param = nn.Parameter(torch.tensor(0.001))
+
     def forward(self, x):
         '''
         :param x: The input tensor of shape (batch_size, context_size)
@@ -64,5 +67,8 @@ class SetFormer(nn.Module):
         
         # Feed the CLS token to the output layer
         x = self.output_layers(x) # (batch_size, output_dim)
+
+        # Scale down the predictions
+        x = self.output_scale_param * x
 
         return x
