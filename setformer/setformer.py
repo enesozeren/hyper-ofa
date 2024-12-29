@@ -62,11 +62,18 @@ class SetFormer(nn.Module):
         # Pass the embeddings through the transformer encoder
         x = self.encoder_block(x, src_key_padding_mask=padding_mask) # (batch_size, context_size, emb_dim)
         
-        # Get the CLS token in the first dimension
-        x = x[:, 0, :]
-        
-        # Feed the CLS token to the output layer
-        x = self.output_layers(x) # (batch_size, output_dim)
+        # Compute mean pooling across the sequence, excluding padding tokens
+        # Mask the padding tokens by setting them to zero
+        x_masked = x.masked_fill(padding_mask.unsqueeze(-1), 0.0)  # (batch_size, context_size, emb_dim)
+
+        # Count the valid tokens (non-padding tokens) for each sequence
+        valid_token_counts = (~padding_mask).sum(dim=1).unsqueeze(-1).clamp(min=1)  # (batch_size, 1)
+
+        # Compute the mean of non-padding tokens
+        x = x_masked.sum(dim=1) / valid_token_counts  # (batch_size, emb_dim)
+
+        # Feed the mean pooled representation to the output layer
+        x = self.output_layers(x)  # (batch_size, output_dim)
 
         # Scale down the predictions
         x = self.output_scale_param * x

@@ -95,10 +95,10 @@ def train_setformer(setformer_config_dict: dict, multilingual_embeddings: WordEm
 
     train_loader = DataLoader(train_set, batch_size=setformer_config_dict['training_hps']['batch_size'], 
                               shuffle=True, collate_fn=collate_fn, num_workers=setformer_config_dict['training_hps']['num_workers'],
-                              persistent_workers=True)
+                              persistent_workers=True, drop_last=True)
     val_loader = DataLoader(val_set, batch_size=setformer_config_dict['training_hps']['batch_size'], 
                             shuffle=False, collate_fn=collate_fn, num_workers=setformer_config_dict['training_hps']['num_workers'],
-                            persistent_workers=True)
+                            persistent_workers=True, drop_last=True)
 
     # Convert the word vector embedding to tensor
     word_vector_emb_matrix = create_word_embedding_matrix(multilingual_embeddings)

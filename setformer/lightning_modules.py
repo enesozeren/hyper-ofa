@@ -8,14 +8,16 @@ import os
 import pickle
 from tqdm import tqdm
 
-class ContrastiveLoss(nn.Module):
-    def __init__(self, temperature=0.1):
+class ContrastiveMagnitudeLoss(nn.Module):
+    def __init__(self, temperature=0.1, loss_scale=1, lambd=0.5):
         """
         Contrastive loss
         :param temperature: Temperature scaling factor for the loss.
         """
-        super(ContrastiveLoss, self).__init__()
+        super(ContrastiveMagnitudeLoss, self).__init__()
         self.temperature = temperature
+        self.loss_scale = loss_scale
+        self.lambd = lambd
 
     def forward(self, predicted, target):
         # Ensure the tensors are float32 for precision
@@ -43,7 +45,8 @@ class ContrastiveLoss(nn.Module):
         normalized_magnitude_loss = elementwise_l1_loss / norm_factor
         normalized_magnitude_loss = normalized_magnitude_loss.mean()
 
-        total_loss = contrastive_dist_loss + normalized_magnitude_loss
+        total_loss = self.loss_scale * (self.lambd * contrastive_dist_loss + 
+                                        (1-self.lambd) * normalized_magnitude_loss)
 
         return total_loss, contrastive_dist_loss, normalized_magnitude_loss
 
@@ -52,8 +55,10 @@ class SetFormerLightning(pl.LightningModule):
         super().__init__()
         self.model = model
         self.model_config_dict = model_config_dict
-        self.criterion = ContrastiveLoss(
-            temperature=self.model_config_dict['training_hps']['contrastive_temperature']
+        self.criterion = ContrastiveMagnitudeLoss(
+            temperature=self.model_config_dict['training_hps']['contrastive_temperature'],
+            loss_scale=self.model_config_dict['training_hps']['loss_scale'],
+            lambd=self.model_config_dict['training_hps']['loss_lambd']
         )
 
     def forward(self, x):

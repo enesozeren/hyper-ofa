@@ -15,6 +15,8 @@ training_hps:
   lr_sched_gamma: 0.95
   weight_decay: 0.0001
   contrastive_temperature: 0.1
+  loss_scale: 5
+  loss_lambd: 0.2
   epochs: 100
   augmentation_threshold: 4
   augmentation_min_percentage: 0.5
