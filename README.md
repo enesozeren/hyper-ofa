@@ -16,8 +16,8 @@ To train setformer use
 ```bash
 python ofa/train_mapping_model.py \
 --word_vec_embedding_path colexnet_vectors/colexnet_vectors_minlang_50_200_10_updated.wv \
---keep_dim 400 \
---mapping_data_dir outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data \
+--keep_dim 100 \
+--mapping_data_dir outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data \
 --setformer_config_path setformer/configs/setformer_config.yaml
 ```
 
@@ -25,10 +25,11 @@ To calculate test metrics of setformer use
 ```bash
 python ofa/mapping_model_inference.py \
 --test_or_inference test \
---source_matrix_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/source_matrix.npy \
+--source_matrix_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data/source_matrix.npy \
 --setformer_config_path setformer/configs/setformer_config.yaml \
---test_inference_mapping_data_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2024-12-09_01-04-10/test_mapping_set.pkl \
---checkpoint_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2024-12-09_01-04-10/checkpoints/model-epoch=99-val_loss=2.8861.ckpt
+--test_inference_mapping_data_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2025-01-01_12-26-07/test_mapping_set.pkl \
+--checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2025-01-01_12-26-07/checkpoints/model-epoch=79-val_loss=3.1559.ckpt \
+--keep_dim 400
 ```
 
 To make inference with setformer use
@@ -36,17 +37,17 @@ To make inference with setformer use
 python ofa/mapping_model_inference.py \
 --test_or_inference inference \
 --setformer_config_path setformer/configs/setformer_config.yaml \
---test_inference_mapping_data_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-200/mapping_data/target_subword_to_word_mapping.pkl \
---checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-200/setformer_training_logs/2024-12-29_16-55-40/checkpoints/model-epoch=39-val_loss=1743.1117.ckpt \
---keep_dim 200
+--test_inference_mapping_data_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/target_subword_to_word_mapping.pkl \
+--checkpoint_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2025-01-01_14-06-09/checkpoints/model-epoch=99-val_loss=3.9293.ckpt \
+--keep_dim 100
 ```
 
 To create the target matrix use
 ```bash
 python ofa/init_target_matrix.py \
---source_matrix_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-200/mapping_data/source_matrix.npy \
---source_model_name xlm-roberta-base \
---setformer_predictions_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-200/setformer_training_logs/2024-12-29_16-55-40/inference_logs/prediction_dict.pkl
+--source_matrix_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/source_matrix.npy \
+--source_model_name roberta-base \
+--setformer_predictions_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2025-01-01_14-06-09/inference_logs/prediction_dict.pkl
 ```
 
 To create the random initialized target matrix use

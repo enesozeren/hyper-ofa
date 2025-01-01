@@ -9,14 +9,14 @@ model_hps:
   cls_idx: 3610268          # CLS token idx
 
 training_hps:
-  batch_size: 128
+  batch_size: 256
   lr: 0.001
   lr_sched_step_size: 5
   lr_sched_gamma: 0.95
   weight_decay: 0.0001
   contrastive_temperature: 0.1
-  loss_scale: 5
-  loss_lambd: 0.2
+  loss_scale: 1
+  loss_lambd: 0.75
   epochs: 100
   augmentation_threshold: 4
   augmentation_min_percentage: 0.5

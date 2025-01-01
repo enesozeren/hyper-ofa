@@ -30,25 +30,22 @@ class ContrastiveMagnitudeLoss(nn.Module):
         # ** Contrastive Distance Loss Component **
         predicted_expanded = predicted.unsqueeze(1).expand(-1, batch_size, -1)
         target_expanded = target.unsqueeze(0).expand(batch_size, -1, -1)
-        # L2 distance between all pairs
-        distances = torch.norm(predicted_expanded - target_expanded, p=2, dim=-1)
+        # Distance between all pairs
+        distances = torch.norm(predicted_expanded - target_expanded, p=1, dim=-1)
         # Negate distances and scale by temperature to create logits
         contrastive_dist_logits = -distances / self.temperature
         # Contr dist loss
         contrastive_dist_loss = F.cross_entropy(contrastive_dist_logits, labels)
 
-        # ** Magnitude Adjusted L1 loss **
-        elementwise_l1_loss = torch.norm(predicted - target, p=1, dim=-1)
-        # Normalize the elementwise L1 loss by the magnitude of the target vector
-        target_magnitude = torch.norm(target, p=1, dim=-1)  # L1 norm (magnitude) of target
-        norm_factor = target_magnitude.detach()
-        normalized_magnitude_loss = elementwise_l1_loss / norm_factor
-        normalized_magnitude_loss = normalized_magnitude_loss.mean()
+        # ** Norm Difference Regularization Component **
+        predicted_norms = torch.norm(predicted, p=1, dim=-1)
+        target_norms = torch.norm(target, p=1, dim=-1)
+        norm_diff_loss = torch.mean((predicted_norms - target_norms).abs() / target_norms)
 
         total_loss = self.loss_scale * (self.lambd * contrastive_dist_loss + 
-                                        (1-self.lambd) * normalized_magnitude_loss)
+                                        (1-self.lambd) * norm_diff_loss)
 
-        return total_loss, contrastive_dist_loss, normalized_magnitude_loss
+        return total_loss, contrastive_dist_loss, norm_diff_loss
 
 class SetFormerLightning(pl.LightningModule):
     def __init__(self, model: SetFormer, model_config_dict: dict):

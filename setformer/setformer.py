@@ -37,14 +37,11 @@ class SetFormer(nn.Module):
         
         # Output layers for the CLS token
         self.output_layers = nn.Sequential(
-            nn.Linear(emb_dim, 2*emb_dim),
+            nn.Linear(emb_dim, 2*output_dim),
             nn.GELU(),
-            nn.Linear(2*emb_dim, output_dim),
+            nn.Linear(2*output_dim, output_dim),
             nn.GELU()
         )
-
-        # Initialize the outputs with a small scale
-        self.output_scale_param = nn.Parameter(torch.tensor(0.001))
 
     def forward(self, x):
         '''
@@ -74,8 +71,5 @@ class SetFormer(nn.Module):
 
         # Feed the mean pooled representation to the output layer
         x = self.output_layers(x)  # (batch_size, output_dim)
-
-        # Scale down the predictions
-        x = self.output_scale_param * x
 
         return x

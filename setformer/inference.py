@@ -90,6 +90,6 @@ def setformer_inference(checkpoint_path, setformer_config_dict: dict,
         # Test the model
         trainer = pl.Trainer(accelerator='auto', logger=logger)
         trainer.test(pl_model, dataloaders=data_loader)
-    else:
-        # Inference
-        pl_model.save_predictions(data_loader, target_subword_idxs, output_path, device)
+
+    # Save the predictions both for inference and test case
+    pl_model.save_predictions(data_loader, target_subword_idxs, output_path, device)
