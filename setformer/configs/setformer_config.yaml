@@ -6,7 +6,6 @@ model_hps:
   dropout: 0.1              # Dropout rate
   max_context_size: 128     # Max Context size for the set transformer
   padding_idx: 3610267      # PAD token idx
-  cls_idx: 3610268          # CLS token idx
 
 training_hps:
   batch_size: 256
@@ -17,7 +16,7 @@ training_hps:
   contrastive_temperature: 0.1
   loss_scale: 1
   loss_lambd: 0.75
-  epochs: 100
+  epochs: 5
   augmentation_threshold: 4
   augmentation_min_percentage: 0.5
   augmentation_max_percentage: 1.0

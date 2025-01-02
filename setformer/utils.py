@@ -9,7 +9,7 @@ def create_word_embedding_matrix(multilingual_embeddings: WordEmbedding):
     '''
     :param multilingual_embeddings: WordEmbedding object
     :return: embedding matrix with the shape of (len(words), embedding_dim)
-    Note: The last -1 row is reserved for PAD token and the last row is reserved for the CLS token
+    Note: The last row is reserved for PAD token
     '''
     # Get the words
     words = multilingual_embeddings.get_words()
@@ -27,12 +27,11 @@ def create_word_embedding_matrix(multilingual_embeddings: WordEmbedding):
     # Create the embedding matrix
     embedding_matrix = torch.zeros((len(words), word_vectors.shape[1]))
     for word, word_id in word_indices.items():
-        embedding_matrix[word_id] = word_vectors[word_id]
-    
-    # Add padding token embedding as the second last row and the CLS token embedding as the last row
+        embedding_matrix[word_id] = word_vectors[word_id]    
+
+    # Add padding token embedding as the last row
     padding_embedding = torch.zeros(1, word_vectors.shape[1])
-    cls_embedding = torch.zeros(1, word_vectors.shape[1])
-    embedding_matrix = torch.cat((embedding_matrix, padding_embedding, cls_embedding), dim=0)
+    embedding_matrix = torch.cat((embedding_matrix, padding_embedding), dim=0)
 
     return embedding_matrix
 

@@ -44,8 +44,7 @@ def setformer_inference(checkpoint_path, setformer_config_dict: dict,
 
     # Create collate_fn for the dataloader
     collate_fn = partial(custom_collate_fn, 
-                         pad_idx=setformer_config_dict['model_hps']['cls_idx'], 
-                         cls_idx=setformer_config_dict['model_hps']['padding_idx'])
+                         pad_idx=setformer_config_dict['model_hps']['padding_idx'])
     # Prepare dataloaders    
     data_loader = DataLoader(dataset, batch_size=setformer_config_dict['training_hps']['batch_size'], 
                               shuffle=False, collate_fn=collate_fn, num_workers=setformer_config_dict['training_hps']['num_workers'],

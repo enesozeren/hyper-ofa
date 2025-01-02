@@ -37,24 +37,26 @@ class OFADataset(Dataset):
             inputs = random.sample(inputs, num_to_keep)
         
         # Truncate inputs to the context size
-        inputs = inputs[:self.max_context_size-1] # -1 for the CLS token to be added in collate_fn
+        inputs = inputs[:self.max_context_size]
 
         return inputs, target
 
 
-def custom_collate_fn(batch, cls_idx, pad_idx):
+def custom_collate_fn(batch, pad_idx):
     '''
     Collate function for the dataloader
-    Add CLS token to the beginning of the input
     Add PAD token to make the input size equal across the batch
     The targets stay the same
     '''
     inputs, targets = zip(*batch)
     batch_size = len(targets)
     
-    # Add CLS token to the beginning of the input
-    padded_inputs = torch.nn.utils.rnn.pad_sequence([torch.cat([torch.tensor([cls_idx]), torch.tensor(i)]) for i in inputs], 
-                                                    batch_first=True, padding_value=pad_idx)
+    # Pad the sequences
+    padded_inputs = torch.nn.utils.rnn.pad_sequence(
+        [torch.tensor(i) for i in inputs], 
+        batch_first=True, padding_value=pad_idx
+        )
+    
     targets = torch.tensor(np.array(targets), dtype=torch.float32).view(batch_size, targets[0].shape[0])
 
     return padded_inputs, targets

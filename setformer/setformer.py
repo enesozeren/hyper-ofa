@@ -13,7 +13,6 @@ class SetFormer(nn.Module):
         :param output_dim: The dimension of the output
         :param context_size: The size of the context window
         :param dropout: The dropout rate
-        :param word_vector_emb: The word vector embeddings (includs the CLS token at the start)
         :param padding_idx: The index of the padding token in the word vector embeddings
         '''
         super(SetFormer, self).__init__()
@@ -35,7 +34,7 @@ class SetFormer(nn.Module):
                                                    dropout=dropout, batch_first=True)
         self.encoder_block = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
         
-        # Output layers for the CLS token
+        # Output layers
         self.output_layers = nn.Sequential(
             nn.Linear(emb_dim, 2*output_dim),
             nn.GELU(),

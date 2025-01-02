@@ -39,10 +39,10 @@ def train(model: SetFormer, model_config_dict: dict,
     checkpoint_callback = ModelCheckpoint(
         dirpath=os.path.join(output_dir, 'checkpoints'),
         filename='model-{epoch:02d}-{val_loss:.4f}',
-        save_top_k=1,
+        save_top_k=5,
         monitor='val_loss',
         mode='min',
-        every_n_epochs=20
+        every_n_epochs=1
     )
 
     # Live loss plot callback
@@ -54,7 +54,6 @@ def train(model: SetFormer, model_config_dict: dict,
         max_epochs=model_config_dict['training_hps']['epochs'],
         logger=logger,
         callbacks=[checkpoint_callback, live_loss_callback],
-        log_every_n_steps=250,
         accelerator='auto'  # Automatically uses GPU if available
     )
 
@@ -79,8 +78,7 @@ def train_setformer(setformer_config_dict: dict, multilingual_embeddings: WordEm
 
     # Pre-fill extra arguments
     collate_fn = partial(custom_collate_fn, 
-                         pad_idx=setformer_config_dict['model_hps']['cls_idx'], 
-                         cls_idx=setformer_config_dict['model_hps']['padding_idx'])
+                         pad_idx=setformer_config_dict['model_hps']['padding_idx'])
     
     # Prepare datasets and dataloaders    
     train_set = OFADataset(train_input_target_pairs['inputs'], train_input_target_pairs['targets'],
