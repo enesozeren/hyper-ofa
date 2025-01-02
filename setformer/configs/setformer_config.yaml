@@ -16,7 +16,7 @@ training_hps:
   contrastive_temperature: 0.1
   loss_scale: 1
   loss_lambd: 0.75
-  epochs: 5
+  epochs: 100
   augmentation_threshold: 4
   augmentation_min_percentage: 0.5
   augmentation_max_percentage: 1.0

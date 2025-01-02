@@ -42,7 +42,7 @@ def train(model: SetFormer, model_config_dict: dict,
         save_top_k=5,
         monitor='val_loss',
         mode='min',
-        every_n_epochs=1
+        every_n_epochs=20
     )
 
     # Live loss plot callback

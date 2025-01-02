@@ -1,5 +1,5 @@
-DATE="2025-01-02_15-01-30"
-CHECKPOINT="model-epoch=02-val_loss=3.8452.ckpt"
+DATE="2025-01-02_15-48-16"
+CHECKPOINT="model-epoch=99-val_loss=3.2735.ckpt"
 
 python ofa/mapping_model_inference.py \
 --test_or_inference inference \
