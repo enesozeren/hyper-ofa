@@ -14,23 +14,17 @@ def create_word_embedding_matrix(multilingual_embeddings: WordEmbedding):
     # Get the words
     words = multilingual_embeddings.get_words()
     # Get the word indices
-    word_indices = {word: multilingual_embeddings.get_word_id(word) for word in words}
+    word_indices = [multilingual_embeddings.get_word_id(word) for word in words]
     # Check if indices start from 0 and end at len(words) - 1
     assert len(word_indices) == len(words), "There are duplicated words in WordEmbedding object"
-    assert min(word_indices.values()) == 0, "Indices do not start from 0 in WordEmbedding object"
-    assert max(word_indices.values()) == len(words) - 1, "Indices do not end at len(words) - 1 in WordEmbedding object"
-    
-    # Get the word vectors
-    word_vectors_np = np.array([multilingual_embeddings.get_word_vector(word) for word in words])
-    word_vectors = torch.tensor(word_vectors_np)
-    
+
     # Create the embedding matrix
-    embedding_matrix = torch.zeros((len(words), word_vectors.shape[1]))
-    for word, word_id in word_indices.items():
-        embedding_matrix[word_id] = word_vectors[word_id]    
+    embedding_matrix = torch.zeros((len(words), multilingual_embeddings.get_word_vector(word_indices[0]).shape[0]))
+    for word_idx in word_indices:
+        embedding_matrix[word_idx] = torch.tensor(multilingual_embeddings.get_word_vector(word_idx))
 
     # Add padding token embedding as the last row
-    padding_embedding = torch.zeros(1, word_vectors.shape[1])
+    padding_embedding = torch.zeros(1, embedding_matrix.shape[1])
     embedding_matrix = torch.cat((embedding_matrix, padding_embedding), dim=0)
 
     return embedding_matrix

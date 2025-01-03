@@ -16,8 +16,8 @@ To train setformer use
 ```bash
 python ofa/train_mapping_model.py \
 --word_vec_embedding_path colexnet_vectors/colexnet_vectors_minlang_50_200_10_updated.wv \
---keep_dim 400 \
---mapping_data_dir outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data \
+--keep_dim 100 \
+--mapping_data_dir outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data \
 --setformer_config_path setformer/configs/setformer_config.yaml
 ```
 

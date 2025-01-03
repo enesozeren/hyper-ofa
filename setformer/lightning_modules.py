@@ -8,56 +8,31 @@ import os
 import pickle
 from tqdm import tqdm
 
-class ContrastiveMagnitudeLoss(nn.Module):
-    def __init__(self, temperature=0.1, loss_scale=1, lambd=0.5):
+class CustomL1Loss(nn.Module):
+    def __init__(self):
         """
         Contrastive loss
         :param temperature: Temperature scaling factor for the loss.
         """
-        super(ContrastiveMagnitudeLoss, self).__init__()
-        self.temperature = temperature
-        self.loss_scale = loss_scale
-        self.lambd = lambd
+        super(CustomL1Loss, self).__init__()
 
     def forward(self, predicted, target):
         # Ensure the tensors are float32 for precision
         predicted = predicted.float()
         target = target.float()
 
-        batch_size = predicted.size(0)
-        labels = torch.arange(batch_size, device=predicted.device)
-
-        # ** Contrastive Similarity Loss Component **
-        # Normalize vectors to unit length
-        predicted_normalized = F.normalize(predicted, p=2, dim=-1)
-        target_normalized = F.normalize(target, p=2, dim=-1)
-        # Compute cosine similarity between all pairs
-        cosine_similarity = torch.matmul(predicted_normalized, target_normalized.T)
-        # Scale similarities by temperature
-        contrastive_similarity_logits = cosine_similarity / self.temperature
-        # Contrastive similarity loss
-        contrastive_similarity_loss = F.cross_entropy(contrastive_similarity_logits, labels)
-
-        # L2 loss
+        # L1 loss
         elementwise_l1_loss = torch.norm(predicted - target, p=1, dim=-1)
         elementwise_l1_loss = elementwise_l1_loss.mean()    
 
-        # Total loss
-        total_loss = self.loss_scale * (self.lambd * contrastive_similarity_loss + 
-                                        (1 - self.lambd) * elementwise_l1_loss)
-
-        return total_loss, contrastive_similarity_loss, elementwise_l1_loss
-
+        return elementwise_l1_loss
+    
 class SetFormerLightning(pl.LightningModule):
     def __init__(self, model: SetFormer, model_config_dict: dict):
         super().__init__()
         self.model = model
         self.model_config_dict = model_config_dict
-        self.criterion = ContrastiveMagnitudeLoss(
-            temperature=self.model_config_dict['training_hps']['contrastive_temperature'],
-            loss_scale=self.model_config_dict['training_hps']['loss_scale'],
-            lambd=self.model_config_dict['training_hps']['loss_lambd']
-        )
+        self.criterion = CustomL1Loss()
 
     def forward(self, x):
         return self.model(x)
@@ -65,26 +40,22 @@ class SetFormerLightning(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         inputs, targets = batch
         outputs = self.model(inputs)
-        train_loss, sub_loss_1, sub_loss_2 = self.criterion(outputs, targets)
+        train_loss = self.criterion(outputs, targets)
         
         # Log the losses separately
         self.log('train_loss', train_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log('train_sub_loss_1', sub_loss_1, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log('train_sub_loss_2', sub_loss_2, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
 
         return train_loss
 
     def validation_step(self, batch, batch_idx):
         inputs, targets = batch
         outputs = self.model(inputs)
-        val_loss, sub_loss1, sub_loss_2 = self.criterion(outputs, targets)
+        val_loss = self.criterion(outputs, targets)
         
         cosine_similarity = F.cosine_similarity(outputs, targets, dim=1).mean()
 
         # Log the losses separately
         self.log('val_loss', val_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log('val_sub_loss_1', sub_loss1, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log('val_sub_loss_2', sub_loss_2, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
         self.log('val_avg_cos_sim', cosine_similarity, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
 
     def configure_optimizers(self):
@@ -113,7 +84,7 @@ class SetFormerLightning(pl.LightningModule):
         outputs = self.model(inputs)
 
         # Calculate all three losses
-        test_loss, sub_loss_1, sub_loss_2 = self.criterion(outputs, targets)
+        test_loss = self.criterion(outputs, targets)
 
         # Log the losses separately
         self.log('test_loss', test_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
@@ -158,17 +129,9 @@ class SetFormerLightning(pl.LightningModule):
 
 class LiveLossPlotCallback(pl.Callback):
     def __init__(self, save_dir="plots"):
-        
         self.train_losses = []  # Stores training total losses per epoch
-        self.train_sub_losses_1 = []
-        self.train_sub_losses_2 = []
-        
         self.val_losses = []  # Stores validation total losses per epoch
-        self.val_sub_losses_1 = []
-        self.val_sub_losses_2 = []
-
         self.val_cos_sim = []  # Stores validation cosine similarities per epoch
-        
         self.iterations = []  # Stores (epoch, batch) for x-axis, but no batch-specific intervals
         self.save_dir = save_dir  # Directory where plots will be saved
         os.makedirs(save_dir, exist_ok=True)  # Ensure the directory exists
@@ -176,12 +139,7 @@ class LiveLossPlotCallback(pl.Callback):
     def on_train_epoch_end(self, trainer, pl_module):
         # Collect losses at the end of each epoch
         train_loss = trainer.callback_metrics.get('train_loss')
-        train_sub_loss_1 = trainer.callback_metrics.get('train_sub_loss_1')
-        train_sub_loss_2 = trainer.callback_metrics.get('train_sub_loss_2')
-
         self.train_losses.append(train_loss.item())
-        self.train_sub_losses_1.append(train_sub_loss_1.item())
-        self.train_sub_losses_2.append(train_sub_loss_2.item())
         self._save_plot()
 
     def on_validation_epoch_end(self, trainer, pl_module):
@@ -192,72 +150,46 @@ class LiveLossPlotCallback(pl.Callback):
             self.iterations.append(f'E-{trainer.current_epoch}')
         
         val_loss = trainer.callback_metrics.get('val_loss')
-        val_sub_loss_1 = trainer.callback_metrics.get('val_sub_loss_1')
-        val_sub_loss_2 = trainer.callback_metrics.get('val_sub_loss_2')
-        
-        self.val_losses.append(val_loss.item())
-        self.val_sub_losses_1.append(val_sub_loss_1.item())
-        self.val_sub_losses_2.append(val_sub_loss_2.item())        
-        
+        self.val_losses.append(val_loss.item())       
         val_cos_sim = trainer.callback_metrics.get('val_avg_cos_sim')
         self.val_cos_sim.append(val_cos_sim.item())
 
     def _save_plot(self):
         # Create a figure with 2 subplots
-        plt.figure(figsize=(24, 24))
+        plt.figure(figsize=(24, 12))
         
+        iterations = self.iterations[1:]
+
         # Dynamically determine x-axis tick spacing
-        total_epochs = len(self.iterations)
+        total_epochs = len(iterations)
         max_ticks = 10  # Maximum number of ticks on the x-axis
         tick_spacing = max(1, total_epochs // max_ticks)  # Calculate tick spacing
         x_ticks = [i for i in range(0, total_epochs, tick_spacing)]  # Select tick positions
-        x_tick_labels = [self.iterations[i] for i in x_ticks]  # Get corresponding labels
+        x_tick_labels = [iterations[i] for i in x_ticks]  # Get corresponding labels
 
         # First subplot for Loss (train and validation)
-        plt.subplot(2, 2, 1)  # (rows, columns, index)
-        plt.plot(self.iterations, self.val_losses, label="Validation Loss", marker='o', color='red')
+        plt.subplot(1, 2, 1)  # (rows, columns, index)
+        plt.plot(iterations, self.val_losses[1:], label="Validation Loss", marker='o', color='red')
         if self.train_losses:
-            plt.plot(self.iterations[1:], self.train_losses, label="Training Loss", marker='o', color='blue')
+            plt.plot(iterations, self.train_losses, label="Training Loss", marker='o', color='blue')
         plt.xlabel("Epoch")
         plt.ylabel("Loss")
         plt.title("Total Loss (Training and Validation)")
-        plt.xticks(ticks=x_ticks, labels=x_tick_labels, rotation=45, ha="right")
+        plt.xticks(ticks=x_ticks, labels=x_tick_labels, rotation=45, ha="right", fontsize=16)
+        plt.yticks(fontsize=16)
         plt.legend()
         plt.grid(True)
 
-        # Second subplot for Cosine Similarity (validation)
-        plt.subplot(2, 2, 2)
-        plt.plot(self.iterations, self.val_cos_sim, label="Validation Cosine Similarity", marker='d', color='green')
+        # Second subplot
+        plt.subplot(1, 2, 2)
+        plt.plot(iterations, self.val_cos_sim[1:], label="Validation Cosine Similarity", marker='d', color='green')
         plt.xlabel("Epoch")
         plt.ylabel("Cosine Similarity")
         plt.title("Cosine Similarity (Validation)")
-        plt.xticks(ticks=x_ticks, labels=x_tick_labels, rotation=45, ha="right")
+        plt.xticks(ticks=x_ticks, labels=x_tick_labels, rotation=45, ha="right", fontsize=16)
+        plt.yticks(fontsize=16)
         plt.legend()
         plt.grid(True)
-
-        # Subplot for Sub Loss 1 (train and validation)
-        plt.subplot(2, 2, 3)  # (rows, columns, index)
-        plt.plot(self.iterations, self.val_sub_losses_1, label="Validation Sub Loss 1", marker='o', color='red')
-        if self.train_losses:
-            plt.plot(self.iterations[1:], self.train_sub_losses_1, label="Training Sub Loss 1", marker='o', color='blue')
-        plt.xlabel("Epoch")
-        plt.ylabel("Loss")
-        plt.title("Sub Loss 1 (Training and Validation)")
-        plt.xticks(ticks=x_ticks, labels=x_tick_labels, rotation=45, ha="right")
-        plt.legend()
-        plt.grid(True)
-
-        # Subplot for Sub Loss 2 (train and validation)
-        plt.subplot(2, 2, 4)  # (rows, columns, index)
-        plt.plot(self.iterations, self.val_sub_losses_2, label="Validation Sub Loss 2", marker='o', color='red')
-        if self.train_losses:
-            plt.plot(self.iterations[1:], self.train_sub_losses_2, label="Training Sub Loss 2", marker='o', color='blue')
-        plt.xlabel("Epoch")
-        plt.ylabel("Loss")
-        plt.title("Sub Loss 2 (Training and Validation)")
-        plt.xticks(ticks=x_ticks, labels=x_tick_labels, rotation=45, ha="right")
-        plt.legend()
-        plt.grid(True)              
 
         # Adjust the layout for better spacing
         plt.tight_layout()

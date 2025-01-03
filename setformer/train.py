@@ -38,11 +38,11 @@ def train(model: SetFormer, model_config_dict: dict,
     # Checkpoint callback
     checkpoint_callback = ModelCheckpoint(
         dirpath=os.path.join(output_dir, 'checkpoints'),
-        filename='model-{epoch:02d}-{val_loss:.4f}',
-        save_top_k=5,
+        filename='model-{epoch:02d}',
+        save_top_k=3,
         monitor='val_loss',
         mode='min',
-        every_n_epochs=20
+        every_n_epochs=40
     )
 
     # Live loss plot callback
@@ -86,7 +86,7 @@ def train_setformer(setformer_config_dict: dict, multilingual_embeddings: WordEm
                             augment=True, 
                             augmentation_threshold=setformer_config_dict['training_hps']['augmentation_threshold'], 
                             min_percentage=setformer_config_dict['training_hps']['augmentation_min_percentage'], 
-                            max_percentage=setformer_config_dict['training_hps']['augmentation_max_percentage'])
+                            keep_all_prob=setformer_config_dict['training_hps']['augmentation_keep_all_percentage'])
     val_set = OFADataset(val_input_target_pairs['inputs'], val_input_target_pairs['targets'],
                             max_context_size=setformer_config_dict['model_hps']['max_context_size'],
                             augment=False)
