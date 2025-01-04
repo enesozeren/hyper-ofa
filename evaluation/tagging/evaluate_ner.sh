@@ -35,9 +35,9 @@ MAX_LENGTH=256
 
 
 DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/ner/"
-OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/tagging/ner/"
-TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/tagging/ner_tokenized"
-EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2024-12-17_11-13-07/wiserofa_rob_all_400"
+OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/tagging/ner/"
+TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/tagging/ner_tokenized"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/hypernetwork_training_logs/2024-12-17_11-13-07/hyperofa_rob_all_400"
 
 python -u evaluation/tagging/evaluate_ner.py \
     --model_type $MODEL_TYPE \

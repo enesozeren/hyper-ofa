@@ -31,7 +31,7 @@ def create_word_embedding_matrix(multilingual_embeddings: WordEmbedding):
 
 def create_input_target_pairs(subword_to_word_mapping, source_matrix):
     """
-    Create input-target pairs for the SetFormer model.
+    Create input-target pairs for the hypernetwork model.
     :param subword_to_word_mapping: A dictionary that maps subword idx to word indices.
     :param source_matrix: The source embedding matrix.
     :return: A dictionary containing inputs (lists of word indices) and targets (source vectors).

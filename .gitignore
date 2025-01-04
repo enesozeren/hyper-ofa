@@ -4,7 +4,6 @@ colexnet_vectors/*
 outputs/*
 notebooks/*
 datasets
-setformer/training_logs/*
 .vscode
 *.sbatch
 *.log

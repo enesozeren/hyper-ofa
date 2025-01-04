@@ -5,7 +5,7 @@ import numpy as np
 import os
 from gensim.models import KeyedVectors
 
-from setformer.inference import setformer_inference
+from hypernetwork.inference import hypernetwork_inference
 from ofa.utils import (
     WordEmbedding
 )
@@ -15,9 +15,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--test_or_inference', type=str, required=True, help='Whether to perform test or inference')
     parser.add_argument('--source_matrix_path', type=str, default=None, help='Path to the source matrix')
-    parser.add_argument('--setformer_config_path', type=str, required=True, help='Path to the SetFormer model config')
+    parser.add_argument('--hypernetwork_config_path', type=str, required=True, help='Path to the hypernetwork model config')
     parser.add_argument('--test_inference_mapping_data_path', type=str, required=True, help='Path to the inference set')
-    parser.add_argument('--checkpoint_path', type=str, required=True, help='Path to the trained SetFormer model checkpoint')
+    parser.add_argument('--checkpoint_path', type=str, required=True, help='Path to the trained hypernetwork model checkpoint')
     parser.add_argument('--keep_dim', type=int, default=100, help="if factorized what is the D' params")
     parser.add_argument('--word_vec_embedding_path', type=str,
                         default='colexnet_vectors/colexnet_vectors_minlang_50_200_10_updated.wv',
@@ -41,10 +41,10 @@ if __name__ == '__main__':
     else:
         source_matrix = None
     
-    # Load the SetFormer model config
-    with open(args.setformer_config_path, 'r') as file:
-        setformer_config_dict = yaml.load(file, Loader=yaml.FullLoader)
-    setformer_config_dict['model_hps']['output_dim'] = args.keep_dim
+    # Load the hypernetwork model config
+    with open(args.hypernetwork_config_path, 'r') as file:
+        hypernetwork_config_dict = yaml.load(file, Loader=yaml.FullLoader)
+    hypernetwork_config_dict['model_hps']['output_dim'] = args.keep_dim
 
     # Load the mapping data to perform inference on
     with open(args.test_inference_mapping_data_path, 'rb') as f:
@@ -53,6 +53,6 @@ if __name__ == '__main__':
     loaded_n2v = KeyedVectors.load(args.word_vec_embedding_path)
     multilingual_embeddings = WordEmbedding(loaded_n2v)
 
-    setformer_inference(args.checkpoint_path, setformer_config_dict, 
+    hypernetwork_inference(args.checkpoint_path, hypernetwork_config_dict, 
                         multilingual_embeddings, mapping_data, source_matrix,
                         args.test_or_inference, output_path)

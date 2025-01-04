@@ -2,37 +2,50 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from setformer.setformer import SetFormer
+from hypernetwork.lstm import LSTMModel
 import matplotlib.pyplot as plt
 import os
 import pickle
 from tqdm import tqdm
 
-class CustomL1Loss(nn.Module):
-    def __init__(self):
-        """
-        Contrastive loss
-        :param temperature: Temperature scaling factor for the loss.
-        """
-        super(CustomL1Loss, self).__init__()
+class CustomLoss(nn.Module):
+    def __init__(self, temperature=0.1, lambd=0.1):
+        super(CustomLoss, self).__init__()
+        self.lambd = lambd
+        self.temperature = temperature
 
-    def forward(self, predicted, target):
-        # Ensure the tensors are float32 for precision
-        predicted = predicted.float()
-        target = target.float()
+    def forward(self, predictions, targets):
 
-        # L1 loss
-        elementwise_l1_loss = torch.norm(predicted - target, p=1, dim=-1)
-        elementwise_l1_loss = elementwise_l1_loss.mean()    
-
-        return elementwise_l1_loss
+        # * Contrastive Loss *
+        # Normalize the vectors for cosine similarity
+        normalized_predictions = F.normalize(predictions, p=2, dim=-1)
+        normalized_targets = F.normalize(targets, p=2, dim=-1)
+        # Cosine similarity (this will act as logits for cross-entropy)
+        cosine_sim = torch.mm(normalized_predictions, normalized_targets.t())  # shape (batch_size, batch_size)
+        # Apply temperature scaling
+        cosine_sim_scaled = cosine_sim / self.temperature
+        # Labels for cross-entropy loss: the diagonal elements (same prediction and target) are the positive class
+        labels = torch.arange(cosine_sim.size(0), device=cosine_sim.device)
+        # Cross-entropy loss: treating cosine similarity as logits
+        contrastive_loss = F.cross_entropy(cosine_sim_scaled, labels)
+        
+        # L1 loss on the original (non-normalized) predictions and targets
+        l1_loss = F.l1_loss(predictions, targets, reduction='mean') / torch.mean(abs(targets))
+        
+        # Total loss: weighted combination of contrastive and L1 losses
+        loss = self.lambd * contrastive_loss + (1-self.lambd) * l1_loss
+        
+        return loss, contrastive_loss, l1_loss
     
-class SetFormerLightning(pl.LightningModule):
-    def __init__(self, model: SetFormer, model_config_dict: dict):
+class HypernetworkLightning(pl.LightningModule):
+    def __init__(self, model: LSTMModel, model_config_dict: dict):
         super().__init__()
         self.model = model
         self.model_config_dict = model_config_dict
-        self.criterion = CustomL1Loss()
+        self.criterion = CustomLoss(
+            temperature=model_config_dict["training_hps"]["contrastive_temp"],
+            lambd=model_config_dict["training_hps"]["loss_lambd"]
+        )
 
     def forward(self, x):
         return self.model(x)
@@ -40,22 +53,27 @@ class SetFormerLightning(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         inputs, targets = batch
         outputs = self.model(inputs)
-        train_loss = self.criterion(outputs, targets)
+        train_loss, contrastive_loss, l1_loss = self.criterion(outputs, targets)
         
         # Log the losses separately
         self.log('train_loss', train_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log('train_contrastive_loss', contrastive_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log('train_l1_loss', l1_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
 
         return train_loss
 
     def validation_step(self, batch, batch_idx):
         inputs, targets = batch
         outputs = self.model(inputs)
-        val_loss = self.criterion(outputs, targets)
+        val_loss, contrastive_loss, l1_loss = self.criterion(outputs, targets)
         
         cosine_similarity = F.cosine_similarity(outputs, targets, dim=1).mean()
 
         # Log the losses separately
         self.log('val_loss', val_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log('val_contrastive_loss', contrastive_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log('val_l1_loss', l1_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+
         self.log('val_avg_cos_sim', cosine_similarity, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
 
     def configure_optimizers(self):

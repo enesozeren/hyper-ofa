@@ -12,13 +12,13 @@ from ofa.utils import (
 )
 
 
-def create_target_embeddings(source_tokenizer, target_tokenizer, source_matrix, setformer_predictions):
+def create_target_embeddings(source_tokenizer, target_tokenizer, source_matrix, hypernetwork_predictions):
     """
     Create the target-language embedding matrix
     :param source_tokenizer:
     :param target_tokenizer:
     :param source_matrix: the source-language PLM subword embedding
-    :param setformer_predictions: the preds for the target token embeds (token idx = key and embedding = value)
+    :param hypernetwork_predictions: the preds for the target token embeds (token idx = key and embedding = value)
     :return: the target-language embedding matrix
     """
 
@@ -33,16 +33,16 @@ def create_target_embeddings(source_tokenizer, target_tokenizer, source_matrix, 
     for target_idx, source_idx in overlapping_token_mapping.values():
         target_matrix[target_idx] = source_matrix[source_idx]
 
-    # Remove the overlapping tokens from setformer predictions
+    # Remove the overlapping tokens from hypernetwork predictions
     overlapping_token_target_idx_set = set([target_idx for target_idx, _ in overlapping_token_mapping.values()])
     # Filter out the overlapping tokens more efficiently
-    setformer_predictions_no_overlapping = {
-        k: v for k, v in setformer_predictions.items() if k not in overlapping_token_target_idx_set
+    hypernetwork_predictions_no_overlapping = {
+        k: v for k, v in hypernetwork_predictions.items() if k not in overlapping_token_target_idx_set
     }
-    print(f"Setformer predictions (overlapping tokens removed) count: {len(setformer_predictions_no_overlapping)}")
+    print(f"hypernetwork predictions (overlapping tokens removed) count: {len(hypernetwork_predictions_no_overlapping)}")
 
-    # Initialize the additional tokens in the target matrix from the setformer predictions
-    for target_idx, embedding in setformer_predictions_no_overlapping.items():
+    # Initialize the additional tokens in the target matrix from the hypernetwork predictions
+    for target_idx, embedding in hypernetwork_predictions_no_overlapping.items():
         target_matrix[target_idx] = embedding
     
     # Initialize the remaining tokens in the target matrix with random embeddings
@@ -64,7 +64,7 @@ if __name__ == '__main__':
     parser.add_argument('--source_model_name', type=str, required=True, help='source model params')
     parser.add_argument('--target_model_name', type=str, default='cis-lmu/glot500-base', help='target model params')
     parser.add_argument('--source_matrix_path', type=str, required=True, help='source matrix path')
-    parser.add_argument('--setformer_predictions_path', type=str, required=True, 
+    parser.add_argument('--hypernetwork_predictions_path', type=str, required=True, 
                         help='predicted embeddings for target tokens path')
     args = parser.parse_args()
 
@@ -73,18 +73,18 @@ if __name__ == '__main__':
     # Load primitive_embeddings
     primitive_embeddings = np.load(args.source_matrix_path.replace('source_matrix.npy', 'primitive_embeddings.npy'))
     
-    # Load setformer predictions
-    with open(args.setformer_predictions_path, 'rb') as f:
-        setformer_predictions = pickle.load(f)
+    # Load hypernetwork predictions
+    with open(args.hypernetwork_predictions_path, 'rb') as f:
+        hypernetwork_predictions = pickle.load(f)
 
     # loading tokenizers and source-model embeddings
     source_tokenizer = AutoTokenizer.from_pretrained(args.source_model_name)  # source tok
     target_tokenizer = AutoTokenizer.from_pretrained(args.target_model_name)  # target tok
 
-    target_matrix = create_target_embeddings(source_tokenizer, target_tokenizer, source_matrix, setformer_predictions)
+    target_matrix = create_target_embeddings(source_tokenizer, target_tokenizer, source_matrix, hypernetwork_predictions)
 
-    output_dir = os.path.join(os.path.dirname(os.path.dirname(args.setformer_predictions_path)), 
-                              f'wiserofa_{args.source_model_name[:3]}_all_{target_matrix.shape[1]}')
+    output_dir = os.path.join(os.path.dirname(os.path.dirname(args.hypernetwork_predictions_path)), 
+                              f'hyperofa_{args.source_model_name[:3]}_all_{target_matrix.shape[1]}')
     
     os.makedirs(output_dir, exist_ok=True)
     # Save matrices

@@ -41,9 +41,9 @@ RANDOM_INITIALIZATION="false"
 
 # paths
 DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/retrieval_tatoeba/"
-OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/retrieval/tatoeba/"
-TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/evaluation/retrieval/tatoeba_tokenized_xlm_r"
-EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/wiser-ofa/outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/setformer_training_logs/2025-01-03_01-50-54/wiserofa_xlm_all_100"
+OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/retrieval/tatoeba/"
+TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/retrieval/tatoeba_tokenized_xlm_r"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/hypernetwork_training_logs/2025-01-03_23-28-02/hyperofa_xlm_all_100"
 
 python -u evaluation/retrieval/evaluate_retrieval_tatoeba.py \
     --model_type $MODEL_TYPE \

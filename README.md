@@ -1,6 +1,6 @@
-# WISER - OFA
+# HyperOFA
 
-## Wiser-Ofa initialization steps
+## HyperOfa initialization steps
 
 To create mapping dataset use
 ```bash
@@ -12,33 +12,33 @@ python ofa/create_mapping_dataset.py \
 --output_dir outputs
 ```
 
-To train setformer use
+To train hypernetwork use
 ```bash
 python ofa/train_mapping_model.py \
 --word_vec_embedding_path colexnet_vectors/colexnet_vectors_minlang_50_200_10_updated.wv \
---keep_dim 100 \
---mapping_data_dir outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data \
---setformer_config_path setformer/configs/setformer_config.yaml
+--keep_dim 400 \
+--mapping_data_dir outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data \
+--hypernetwork_config_path hypernetwork/configs/hypernetwork_config.yaml
 ```
 
-To calculate test metrics of setformer use
+To calculate test metrics of hypernetwork use
 ```bash
 python ofa/mapping_model_inference.py \
 --test_or_inference test \
 --source_matrix_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data/source_matrix.npy \
---setformer_config_path setformer/configs/setformer_config.yaml \
---test_inference_mapping_data_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2025-01-01_12-26-07/test_mapping_set.pkl \
---checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2025-01-01_12-26-07/checkpoints/model-epoch=79-val_loss=3.1559.ckpt \
+--hypernetwork_config_path hypernetwork/configs/hypernetwork_config.yaml \
+--test_inference_mapping_data_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/hypernetwork_training_logs/2025-01-01_12-26-07/test_mapping_set.pkl \
+--checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/hypernetwork_training_logs/2025-01-01_12-26-07/checkpoints/model-epoch=79-val_loss=3.1559.ckpt \
 --keep_dim 400
 ```
 
-To make inference with setformer use
+To make inference with hypernetwork use
 ```bash
 python ofa/mapping_model_inference.py \
 --test_or_inference inference \
---setformer_config_path setformer/configs/setformer_config.yaml \
+--hypernetwork_config_path hypernetwork/configs/hypernetwork_config.yaml \
 --test_inference_mapping_data_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data/target_subword_to_word_mapping.pkl \
---checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2025-01-02_13-50-08/checkpoints/model-epoch=99-val_loss=3.9901.ckpt \
+--checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/hypernetwork_training_logs/2025-01-02_13-50-08/checkpoints/model-epoch=99-val_loss=3.9901.ckpt \
 --keep_dim 400
 ```
 
@@ -47,7 +47,7 @@ To create the target matrix use
 python ofa/init_target_matrix.py \
 --source_matrix_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data/source_matrix.npy \
 --source_model_name xlm-roberta-base \
---setformer_predictions_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/setformer_training_logs/2025-01-02_13-50-08/inference_logs/prediction_dict.pkl
+--hypernetwork_predictions_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/hypernetwork_training_logs/2025-01-02_13-50-08/inference_logs/prediction_dict.pkl
 ```
 
 To create the random initialized target matrix use

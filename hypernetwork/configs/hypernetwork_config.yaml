@@ -1,19 +1,20 @@
 model_hps:
   num_layers: 2             # Number of transformer layers
   emb_dim: 200              # Dimension of word vectors (colexnet)
-  num_heads: 10             # Number of attention heads
-  dim_feedforward: 800      # Dimension of feed-forward layers
-  dropout: 0.1              # Dropout rate
+  hidden_dim: 800           # Hidden state dim  
+  dropout: 0.4              # Dropout rate
   max_context_size: 256     # Max Context size for the set transformer
   padding_idx: 3610267      # PAD token idx
 
 training_hps:
   batch_size: 256
-  lr: 0.0005
-  lr_sched_step_size: 5
+  lr: 0.00005
+  lr_sched_step_size: 10
   lr_sched_gamma: 0.95
-  weight_decay: 0.0
-  epochs: 120
+  loss_lambd: 0.1
+  contrastive_temp: 0.1
+  weight_decay: 0.001
+  epochs: 160
   augmentation_threshold: 4
   augmentation_min_percentage: 0.5
   augmentation_keep_all_percentage: 0.5
