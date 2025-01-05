@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import sys
-sys.path.append('/mounts/data/proj/ayyoobbig/ofa/')
 import argparse
 import os
 
@@ -215,16 +214,15 @@ def main():
     parser.add_argument("--log_file", type=str, default=None, help="log file")
     parser.add_argument("--eval_patience", type=int, default=-1, help="wait N times of decreasing dev score before early stop during training")
     
-    # update below
     parser.add_argument("--num_primitive", type=int, default=768)
-    parser.add_argument("--embedding_path", type=str, 
-        default="/mounts/data/proj/yihong/newhome/OFA/stored_factorization/updated"
-    )
+    # Factorized and initialized embeddings path (primitive and target matrices)
+    parser.add_argument("--embedding_dir", type=str, required=True, 
+                        help="Path to the embeddings (primitive and target matrices) directory")
     parser.add_argument("--only_eng_vocab", type=bool_flag, default=False)
     parser.add_argument("--use_initialization", type=bool_flag, default=True)
     parser.add_argument("--random_initialization", type=bool_flag, default=False)
     # when checkpoint number is zero, loading the model without continue training
-    parser.add_argument("--checkpoint_num", type=int, default=180000)
+    parser.add_argument("--checkpoint_num", type=int, default=0)
     parser.add_argument(
     "--tokenized_dir",
     default=None,
@@ -236,7 +234,7 @@ def main():
     args = parser.parse_args()
     
     args.predict_langs = []
-    with open('pos_lang_list.txt', 'r') as f:
+    with open('evaluation/tagging/pos_lang_list.txt', 'r') as f:
         lines = f.readlines()
         for line in lines:
             args.predict_langs.append(line.strip().split('\t')[0])
@@ -245,7 +243,7 @@ def main():
     if args.init_checkpoint:
         # in this case, the tokenizer should all be glot500 tokenizer
         if args.use_initialization:
-            embedding_name = get_embedding_path(args.model_name_or_path, args.num_primitive, args.only_eng_vocab, args.random_initialization)
+            embedding_name = args.embedding_dir.split('/')[-1]
             args.init_checkpoint += f"LM_ofa_{embedding_name}/checkpoint-{str(args.checkpoint_num)}"
         else:
             args.init_checkpoint += f"{args.model_name_or_path}/checkpoint-{str(args.checkpoint_num)}"
@@ -256,8 +254,8 @@ def main():
     if not os.path.exists(args.tokenized_dir):
         os.makedirs(args.tokenized_dir)
 
-    args.output_dir += f"{embedding_name}/checkpoint-{str(args.checkpoint_num)}" if args.use_initialization else args.model_name_or_path
-    # args.output_dir += f"_checkpoint-{str(args.checkpoint_num)}" if args.init_checkpoint else ''
+    args.output_dir += embedding_name if args.use_initialization else args.model_name_or_path
+    args.output_dir += f"_checkpoint-{str(args.checkpoint_num)}" if args.init_checkpoint else ''
 
     args.model_save_name = embedding_name if args.use_initialization else args.model_name_or_path
     if not os.path.exists(args.output_dir):

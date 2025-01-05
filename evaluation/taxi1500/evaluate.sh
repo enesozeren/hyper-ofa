@@ -17,22 +17,31 @@
 MODEL="roberta-base"
 MODEL_TYPE="roberta"
 
-NUM_PRIMITIVE=400
+NUM_PRIMITIVE=100
 
 USE_INITIALIZATION="true"
 CHECKPOINT_NUM=0
 RANDOM_INITIALIZATION="false"
 
-DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/retrieval_bible_test/"
+# Finetuning parameters
+NUM_EPOCHS=40
+BATCH_SIZE=16
+GRAD_ACC=1
+MAX_LENGTH=256
+
+# Paths
+DATA_DIR=""
 OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/taxi1500/taxi_results/"
-EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/hypernetwork_training_logs/2024-12-17_11-13-07/hyperofa_rob_all_400"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/hypernetwork_training_logs/2025-01-04_22-43-39/hyperofa_rob_all_100"
 
 
 python -u evaluate.py \
     --model_type $MODEL_TYPE \
     --model_name_or_path $MODEL \
     --output_dir $OUTPUT_DIR \
-    --epochs 40 \
+    --epochs $NUM_EPOCHS \
+    --train_batch_size $BATCH_SIZE \
+    --accum_iter 1 \
     --only_eng_vocab "false" \
     --use_initialization $USE_INITIALIZATION \
     --random_initialization $RANDOM_INITIALIZATION \

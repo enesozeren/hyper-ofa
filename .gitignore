@@ -17,6 +17,8 @@ evaluation/retrieval/bible_tokenized_roberta_glot500
 evaluation/retrieval/tatoeba_tokenized_roberta_glot500
 evaluation/tagging/ner
 evaluation/tagging/ner_tokenized_glot500
+evaluation/tagging/pos
+evaluation/tagging/pos_tokenized_glot500
 
 # Experimental bash scripts
 test_metrics_5_epochs.bash

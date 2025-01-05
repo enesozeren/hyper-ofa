@@ -1,5 +1,4 @@
 import sys
-# sys.path.append('/mounts/data/proj/ayyoobbig/ofa/')
 import argparse
 import glob
 import logging

@@ -17,7 +17,7 @@
 MODEL="roberta-base"
 MODEL_TYPE="roberta"
 
-NUM_PRIMITIVE=100
+NUM_PRIMITIVE=200
 # set checkpoint_num=0 to use models without continue pretraining
 CHECKPOINT_NUM=0
 # set random_initialization "true" to use models with random initialization for embeddings of new words
@@ -33,11 +33,11 @@ BATCH_SIZE=32
 GRAD_ACC=1
 MAX_LENGTH=256
 
-
+# Paths
 DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/ner/"
 OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/tagging/ner/"
 TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/tagging/ner_tokenized"
-EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/hypernetwork_training_logs/2024-12-17_11-13-07/hyperofa_rob_all_400"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/roberta-base_to_cis-lmu-glot500-base_dim-200/hypernetwork_training_logs/2025-01-04_23-00-30/hyperofa_rob_all_200"
 
 python -u evaluation/tagging/evaluate_ner.py \
     --model_type $MODEL_TYPE \

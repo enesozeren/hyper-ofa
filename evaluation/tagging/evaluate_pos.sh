@@ -13,29 +13,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# MODEL=${1:-cis-lmu/glot500-base}
-MODEL="xlm-roberta-base"
-GPU=${2:-1}
+# Model parameters
+MODEL="roberta-base"
+MODEL_TYPE="roberta"
 
-export CUDA_VISIBLE_DEVICES=$GPU
-MODEL_TYPE="xlmr"
+NUM_PRIMITIVE=100
+# set checkpoint_num=0 to use models without continue pretraining
+CHECKPOINT_NUM=0
+# set random_initialization "true" to use models with random initialization for embeddings of new words
+RANDOM_INITIALIZATION="false"
+# set use_initialization "true" to use models with initialization
+USE_INITIALIZATION="true"
+
+# Finetuning parameters
 NUM_EPOCHS=10
 LR=2e-5
 LC=""
-BATCH_SIZE=8
-GRAD_ACC=4
+BATCH_SIZE=32
+GRAD_ACC=1
 MAX_LENGTH=256
-NUM_PRIMITIVE=400
-checkpoint_num=260000
 
+# Paths
+DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/pos/"
+OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/tagging/pos/"
+TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/tagging/pos_tokenized"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/hypernetwork_training_logs/2025-01-04_22-43-39/hyperofa_rob_all_100"
 
-DATA_DIR="/mounts/data/proj/linpq/datasets/pos/"
-OUTPUT_DIR="/mounts/data/proj/ayyoobbig/ofa/evaluation/tagging/pos/"
-tokenized_dir="/mounts/data/proj/ayyoobbig/ofa/evaluation/tagging/pos_tokenized"
-init_checkpoint="/mounts/data/proj/ayyoobbig/ofa/trained_models/updated/"
-
-
-python -u evaluate_pos.py \
+python -u evaluation/tagging/evaluate_pos.py \
     --model_type $MODEL_TYPE \
     --model_name_or_path $MODEL \
     --data_dir $DATA_DIR \
@@ -58,10 +62,10 @@ python -u evaluate_pos.py \
     --overwrite_output_dir \
     --save_only_best_checkpoint $LC \
     --only_eng_vocab "false" \
-    --use_initialization "true" \
-    --random_initialization "false" \
-    --checkpoint_num $checkpoint_num \
+    --use_initialization $USE_INITIALIZATION \
+    --random_initialization $RANDOM_INITIALIZATION \
+    --checkpoint_num $CHECKPOINT_NUM \
     --num_primitive $NUM_PRIMITIVE \
-    --tokenized_dir $tokenized_dir \
-    --init_checkpoint $init_checkpoint
-
+    --tokenized_dir $TOKENIZED_DIR \
+    --init_checkpoint 0 \
+    --embedding_dir $EMBEDDING_DIR

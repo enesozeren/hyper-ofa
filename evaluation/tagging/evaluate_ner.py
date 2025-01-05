@@ -211,7 +211,6 @@ def main():
     parser.add_argument("--log_file", type=str, default=None, help="log file")
     parser.add_argument("--eval_patience", type=int, default=-1, help="wait N times of decreasing dev score before early stop during training")
 
-    # update below
     parser.add_argument("--num_primitive", type=int, default=768)
     # Factorized and initialized embeddings path (primitive and target matrices)
     parser.add_argument("--embedding_dir", type=str, required=True, 
