@@ -38,10 +38,10 @@ def train(model: LSTMModel, model_config_dict: dict,
     checkpoint_callback = ModelCheckpoint(
         dirpath=os.path.join(output_dir, 'checkpoints'),
         filename='model-{epoch:02d}',
-        save_top_k=2,
+        save_top_k=1,
         monitor='val_loss',
         mode='min',
-        every_n_epochs=3
+        every_n_epochs=10
     )
 
     # Live loss plot callback

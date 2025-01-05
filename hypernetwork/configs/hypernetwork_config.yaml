@@ -8,13 +8,13 @@ model_hps:
 
 training_hps:
   batch_size: 256
-  lr: 0.00005
+  lr: 0.0003
   lr_sched_step_size: 10
   lr_sched_gamma: 0.95
   loss_lambd: 0.1
   contrastive_temp: 0.1
-  weight_decay: 0.001
-  epochs: 160
+  weight_decay: 0
+  epochs: 150
   augmentation_threshold: 4
   augmentation_min_percentage: 0.5
   augmentation_keep_all_percentage: 0.5

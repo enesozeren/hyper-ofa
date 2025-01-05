@@ -102,16 +102,26 @@ class HypernetworkLightning(pl.LightningModule):
         outputs = self.model(inputs)
 
         # Calculate all three losses
-        test_loss = self.criterion(outputs, targets)
+        test_loss, test_contrastive_loss, test_l1_loss = self.criterion(outputs, targets)
 
         # Log the losses separately
         self.log('test_loss', test_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log('test_contrastive_loss', test_contrastive_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log('test_l1_loss', test_l1_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
 
         # Calculate and log cosine similarity (if needed independently)
         cosine_similarity = torch.nn.functional.cosine_similarity(outputs, targets, dim=1).mean()
         self.log('avg_cos_sim', cosine_similarity, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
 
-        return {"test_loss": test_loss, "test_avg_cos_sim": cosine_similarity}
+        # Calculate average L1 distance element-wise
+        test_avg_l1_dist_elementwise = F.l1_loss(outputs, targets, reduction='mean')
+        self.log('test_avg_l1_dist_elementwise', test_avg_l1_dist_elementwise, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+
+        return {
+            "test_loss": test_loss, 
+            "test_avg_cos_sim": cosine_similarity,
+            "test_avg_l1_dist_elementwise": test_avg_l1_dist_elementwise
+            }
     
     def save_predictions(self, dataloader, target_subword_idxs: list, output_path, device):
         '''

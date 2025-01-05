@@ -16,8 +16,8 @@ To train hypernetwork use
 ```bash
 python ofa/train_mapping_model.py \
 --word_vec_embedding_path colexnet_vectors/colexnet_vectors_minlang_50_200_10_updated.wv \
---keep_dim 400 \
---mapping_data_dir outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data \
+--keep_dim 200 \
+--mapping_data_dir outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-200/mapping_data \
 --hypernetwork_config_path hypernetwork/configs/hypernetwork_config.yaml
 ```
 
@@ -25,11 +25,11 @@ To calculate test metrics of hypernetwork use
 ```bash
 python ofa/mapping_model_inference.py \
 --test_or_inference test \
---source_matrix_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data/source_matrix.npy \
+--source_matrix_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/source_matrix.npy \
 --hypernetwork_config_path hypernetwork/configs/hypernetwork_config.yaml \
---test_inference_mapping_data_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/hypernetwork_training_logs/2025-01-01_12-26-07/test_mapping_set.pkl \
---checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/hypernetwork_training_logs/2025-01-01_12-26-07/checkpoints/model-epoch=79-val_loss=3.1559.ckpt \
---keep_dim 400
+--test_inference_mapping_data_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/hypernetwork_training_logs/2025-01-04_22-43-39/test_mapping_set.pkl \
+--checkpoint_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/hypernetwork_training_logs/2025-01-04_22-43-39/checkpoints/model-epoch=99.ckpt \
+--keep_dim 100
 ```
 
 To make inference with hypernetwork use
