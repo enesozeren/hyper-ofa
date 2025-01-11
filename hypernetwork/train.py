@@ -10,12 +10,13 @@ from pytorch_lightning.loggers import CSVLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 from ofa.utils import WordEmbedding
-from hypernetwork.dataset import OFADataset, custom_collate_fn
+from hypernetwork.dataset import OFADataset, CustomGroupedSampler, custom_collate_fn
 from hypernetwork.utils import create_word_embedding_matrix
 from hypernetwork.lightning_modules import HypernetworkLightning, LiveLossPlotCallback
 from hypernetwork.lstm import LSTMModel
+from hypernetwork.setformer import SetFormer
 
-def train(model: LSTMModel, model_config_dict: dict, 
+def train(model, model_config_dict: dict, 
           train_loader: DataLoader, val_loader: DataLoader, output_dir: str):
     '''
     Train the hypernetwork model
@@ -90,8 +91,11 @@ def train_hypernetwork(hypernetwork_config_dict: dict, multilingual_embeddings: 
                             max_context_size=hypernetwork_config_dict['model_hps']['max_context_size'],
                             augment=False)
 
-    train_loader = DataLoader(train_set, batch_size=hypernetwork_config_dict['training_hps']['batch_size'], 
-                              shuffle=True, collate_fn=collate_fn, num_workers=hypernetwork_config_dict['training_hps']['num_workers'],
+    # Assuming 'dataset' is your OFADataset instance
+    train_sampler = CustomGroupedSampler(train_set, batch_size=hypernetwork_config_dict['training_hps']['batch_size'])
+    train_loader = DataLoader(train_set, batch_size=hypernetwork_config_dict['training_hps']['batch_size'],
+                              sampler=train_sampler, collate_fn=collate_fn, 
+                              num_workers=hypernetwork_config_dict['training_hps']['num_workers'],
                               persistent_workers=True, drop_last=True)
     val_loader = DataLoader(val_set, batch_size=hypernetwork_config_dict['training_hps']['batch_size'], 
                             shuffle=False, collate_fn=collate_fn, num_workers=hypernetwork_config_dict['training_hps']['num_workers'],
@@ -101,7 +105,7 @@ def train_hypernetwork(hypernetwork_config_dict: dict, multilingual_embeddings: 
     word_vector_emb_matrix = create_word_embedding_matrix(multilingual_embeddings)
 
     # Load the model
-    lstm = LSTMModel(emb_dim=hypernetwork_config_dict['model_hps']['emb_dim'],
+    model = LSTMModel(emb_dim=hypernetwork_config_dict['model_hps']['emb_dim'],
                           hidden_dim=hypernetwork_config_dict['model_hps']['hidden_dim'],
                           num_layers=hypernetwork_config_dict['model_hps']['num_layers'],
                           output_dim=hypernetwork_config_dict['model_hps']['output_dim'],
@@ -109,6 +113,6 @@ def train_hypernetwork(hypernetwork_config_dict: dict, multilingual_embeddings: 
                           dropout=hypernetwork_config_dict['model_hps']['dropout'],
                           word_vector_emb=word_vector_emb_matrix,
                           padding_idx=hypernetwork_config_dict['model_hps']['padding_idx'])
-    
+
     # Train the model
-    train(lstm, hypernetwork_config_dict, train_loader, val_loader, output_dir)
+    train(model, hypernetwork_config_dict, train_loader, val_loader, output_dir)

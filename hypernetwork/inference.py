@@ -7,6 +7,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import CSVLogger
 from hypernetwork.dataset import OFADataset, custom_collate_fn
 from hypernetwork.lstm import LSTMModel
+from hypernetwork.setformer import SetFormer
 from hypernetwork.lightning_modules import HypernetworkLightning
 from hypernetwork.utils import (
     create_word_embedding_matrix, 
@@ -53,9 +54,9 @@ def hypernetwork_inference(checkpoint_path, hypernetwork_config_dict: dict,
 
     # Convert the word vector embedding to tensor
     word_vector_emb_matrix = create_word_embedding_matrix(multilingual_embeddings)
-        
+    
     # Load the model from checkpoint
-    lstm = LSTMModel(emb_dim=hypernetwork_config_dict['model_hps']['emb_dim'],
+    model = LSTMModel(emb_dim=hypernetwork_config_dict['model_hps']['emb_dim'],
                           hidden_dim=hypernetwork_config_dict['model_hps']['hidden_dim'],
                           num_layers=hypernetwork_config_dict['model_hps']['num_layers'],
                           output_dim=hypernetwork_config_dict['model_hps']['output_dim'],
@@ -63,6 +64,15 @@ def hypernetwork_inference(checkpoint_path, hypernetwork_config_dict: dict,
                           dropout=hypernetwork_config_dict['model_hps']['dropout'],
                           word_vector_emb=word_vector_emb_matrix,
                           padding_idx=hypernetwork_config_dict['model_hps']['padding_idx'])    
+
+    # model = SetFormer(emb_dim=hypernetwork_config_dict['model_hps']['emb_dim'],
+    #                       num_heads=hypernetwork_config_dict['model_hps']['num_heads'],
+    #                       num_layers=hypernetwork_config_dict['model_hps']['num_layers'],
+    #                       output_dim=hypernetwork_config_dict['model_hps']['output_dim'],
+    #                       context_size=hypernetwork_config_dict['model_hps']['max_context_size'],
+    #                       dropout=hypernetwork_config_dict['model_hps']['dropout'],
+    #                       word_vector_emb=word_vector_emb_matrix,
+    #                       padding_idx=hypernetwork_config_dict['model_hps']['padding_idx'])
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Device: {device}") 
@@ -76,10 +86,10 @@ def hypernetwork_inference(checkpoint_path, hypernetwork_config_dict: dict,
         # Remove the "model." prefix
         new_key = key.replace("model.", "") if key.startswith("model.") else key
         new_state_dict[new_key] = value    
-    lstm.load_state_dict(new_state_dict)
+    model.load_state_dict(new_state_dict)
 
     # Create the lightning module
-    pl_model = HypernetworkLightning(lstm, hypernetwork_config_dict)
+    pl_model = HypernetworkLightning(model, hypernetwork_config_dict)
     pl_model.to(device)
     pl_model.eval()
 

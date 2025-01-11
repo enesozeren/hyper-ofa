@@ -13,9 +13,8 @@ class CustomLoss(nn.Module):
         super(CustomLoss, self).__init__()
         self.lambd = lambd
         self.temperature = temperature
-
+        
     def forward(self, predictions, targets):
-
         # * Contrastive Loss *
         # Normalize the vectors for cosine similarity
         normalized_predictions = F.normalize(predictions, p=2, dim=-1)
@@ -42,10 +41,8 @@ class HypernetworkLightning(pl.LightningModule):
         super().__init__()
         self.model = model
         self.model_config_dict = model_config_dict
-        self.criterion = CustomLoss(
-            temperature=model_config_dict["training_hps"]["contrastive_temp"],
-            lambd=model_config_dict["training_hps"]["loss_lambd"]
-        )
+        self.criterion = CustomLoss(temperature=model_config_dict['training_hps']['contrastive_temp'], 
+                                    lambd=model_config_dict['training_hps']['loss_lambd'])
 
     def forward(self, x):
         return self.model(x)
@@ -55,10 +52,10 @@ class HypernetworkLightning(pl.LightningModule):
         outputs = self.model(inputs)
         train_loss, contrastive_loss, l1_loss = self.criterion(outputs, targets)
         
-        # Log the losses separately
+        # Log the loss
         self.log('train_loss', train_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
         self.log('train_contrastive_loss', contrastive_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log('train_l1_loss', l1_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log('train_l1_loss', l1_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)                
 
         return train_loss
 
@@ -69,7 +66,7 @@ class HypernetworkLightning(pl.LightningModule):
         
         cosine_similarity = F.cosine_similarity(outputs, targets, dim=1).mean()
 
-        # Log the losses separately
+        # Log the loss and cos sim
         self.log('val_loss', val_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
         self.log('val_contrastive_loss', contrastive_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
         self.log('val_l1_loss', l1_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
@@ -102,13 +99,10 @@ class HypernetworkLightning(pl.LightningModule):
         outputs = self.model(inputs)
 
         # Calculate all three losses
-        test_loss, test_contrastive_loss, test_l1_loss = self.criterion(outputs, targets)
+        test_loss = self.criterion(outputs, targets)
 
         # Log the losses separately
         self.log('test_loss', test_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log('test_contrastive_loss', test_contrastive_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log('test_l1_loss', test_l1_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-
         # Calculate and log cosine similarity (if needed independently)
         cosine_similarity = torch.nn.functional.cosine_similarity(outputs, targets, dim=1).mean()
         self.log('avg_cos_sim', cosine_similarity, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
@@ -158,7 +152,11 @@ class HypernetworkLightning(pl.LightningModule):
 class LiveLossPlotCallback(pl.Callback):
     def __init__(self, save_dir="plots"):
         self.train_losses = []  # Stores training total losses per epoch
+        self.train_contrastive_losses = []
+        self.train_l1_losses = []
         self.val_losses = []  # Stores validation total losses per epoch
+        self.val_contrastive_losses = []
+        self.val_l1_losses = []
         self.val_cos_sim = []  # Stores validation cosine similarities per epoch
         self.iterations = []  # Stores (epoch, batch) for x-axis, but no batch-specific intervals
         self.save_dir = save_dir  # Directory where plots will be saved
@@ -168,6 +166,13 @@ class LiveLossPlotCallback(pl.Callback):
         # Collect losses at the end of each epoch
         train_loss = trainer.callback_metrics.get('train_loss')
         self.train_losses.append(train_loss.item())
+
+        train_contrastive_loss = trainer.callback_metrics.get('train_contrastive_loss')
+        self.train_contrastive_losses.append(train_contrastive_loss.item())
+        
+        train_l1_loss = trainer.callback_metrics.get('train_l1_loss')
+        self.train_l1_losses.append(train_l1_loss.item())                
+        
         self._save_plot()
 
     def on_validation_epoch_end(self, trainer, pl_module):
@@ -178,14 +183,21 @@ class LiveLossPlotCallback(pl.Callback):
             self.iterations.append(f'E-{trainer.current_epoch}')
         
         val_loss = trainer.callback_metrics.get('val_loss')
-        self.val_losses.append(val_loss.item())       
+        self.val_losses.append(val_loss.item())
+
+        val_contrastive_loss = trainer.callback_metrics.get('val_contrastive_loss')
+        self.val_contrastive_losses.append(val_contrastive_loss.item())
+        
+        val_l1_loss = trainer.callback_metrics.get('val_l1_loss')
+        self.val_l1_losses.append(val_l1_loss.item())          
+
         val_cos_sim = trainer.callback_metrics.get('val_avg_cos_sim')
-        self.val_cos_sim.append(val_cos_sim.item())
+        self.val_cos_sim.append(val_cos_sim.item())               
 
     def _save_plot(self):
         # Create a figure with 2 subplots
-        plt.figure(figsize=(24, 12))
-        
+        plt.figure(figsize=(24, 24))
+
         iterations = self.iterations[1:]
 
         # Dynamically determine x-axis tick spacing
@@ -196,24 +208,50 @@ class LiveLossPlotCallback(pl.Callback):
         x_tick_labels = [iterations[i] for i in x_ticks]  # Get corresponding labels
 
         # First subplot for Loss (train and validation)
-        plt.subplot(1, 2, 1)  # (rows, columns, index)
+        plt.subplot(2, 2, 1)  # (rows, columns, index)
         plt.plot(iterations, self.val_losses[1:], label="Validation Loss", marker='o', color='red')
         if self.train_losses:
             plt.plot(iterations, self.train_losses, label="Training Loss", marker='o', color='blue')
         plt.xlabel("Epoch")
         plt.ylabel("Loss")
-        plt.title("Total Loss (Training and Validation)")
+        plt.title("Loss (Training and Validation)")
         plt.xticks(ticks=x_ticks, labels=x_tick_labels, rotation=45, ha="right", fontsize=16)
         plt.yticks(fontsize=16)
         plt.legend()
         plt.grid(True)
 
-        # Second subplot
-        plt.subplot(1, 2, 2)
+        # Subplot 2
+        plt.subplot(2, 2, 2)
         plt.plot(iterations, self.val_cos_sim[1:], label="Validation Cosine Similarity", marker='d', color='green')
         plt.xlabel("Epoch")
         plt.ylabel("Cosine Similarity")
         plt.title("Cosine Similarity (Validation)")
+        plt.xticks(ticks=x_ticks, labels=x_tick_labels, rotation=45, ha="right", fontsize=16)
+        plt.yticks(fontsize=16)
+        plt.legend()
+        plt.grid(True)
+
+        # Subplot 3
+        plt.subplot(2, 2, 3)  # (rows, columns, index)
+        plt.plot(iterations, self.val_contrastive_losses[1:], label="Validation Loss", marker='o', color='red')
+        if self.train_losses:
+            plt.plot(iterations, self.train_contrastive_losses, label="Training Loss", marker='o', color='blue')
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.title("Contrastive Loss (Training and Validation)")
+        plt.xticks(ticks=x_ticks, labels=x_tick_labels, rotation=45, ha="right", fontsize=16)
+        plt.yticks(fontsize=16)
+        plt.legend()
+        plt.grid(True)
+
+        # Subplot 4
+        plt.subplot(2, 2, 4)  # (rows, columns, index)
+        plt.plot(iterations, self.val_l1_losses[1:], label="Validation Loss", marker='o', color='red')
+        if self.train_losses:
+            plt.plot(iterations, self.train_l1_losses, label="Training Loss", marker='o', color='blue')
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.title("Scaled L1 Loss (Training and Validation)")
         plt.xticks(ticks=x_ticks, labels=x_tick_labels, rotation=45, ha="right", fontsize=16)
         plt.yticks(fontsize=16)
         plt.legend()

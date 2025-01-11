@@ -17,7 +17,7 @@ To train hypernetwork use
 python ofa/train_mapping_model.py \
 --word_vec_embedding_path colexnet_vectors/colexnet_vectors_minlang_50_200_10_updated.wv \
 --keep_dim 200 \
---mapping_data_dir outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-200/mapping_data \
+--mapping_data_dir outputs/roberta-base_to_cis-lmu-glot500-base_dim-200/mapping_data \
 --hypernetwork_config_path hypernetwork/configs/hypernetwork_config.yaml
 ```
 
@@ -27,8 +27,8 @@ python ofa/mapping_model_inference.py \
 --test_or_inference test \
 --source_matrix_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/source_matrix.npy \
 --hypernetwork_config_path hypernetwork/configs/hypernetwork_config.yaml \
---test_inference_mapping_data_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/hypernetwork_training_logs/2025-01-04_22-43-39/test_mapping_set.pkl \
---checkpoint_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/hypernetwork_training_logs/2025-01-04_22-43-39/checkpoints/model-epoch=99.ckpt \
+--test_inference_mapping_data_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/hypernetwork_training_logs/2025-01-09_01-21-32/test_mapping_set.pkl \
+--checkpoint_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/hypernetwork_training_logs/2025-01-09_01-21-32/checkpoints/model-epoch=39.ckpt \
 --keep_dim 100
 ```
 
@@ -37,9 +37,9 @@ To make inference with hypernetwork use
 python ofa/mapping_model_inference.py \
 --test_or_inference inference \
 --hypernetwork_config_path hypernetwork/configs/hypernetwork_config.yaml \
---test_inference_mapping_data_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data/target_subword_to_word_mapping.pkl \
---checkpoint_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/hypernetwork_training_logs/2025-01-02_13-50-08/checkpoints/model-epoch=99-val_loss=3.9901.ckpt \
---keep_dim 400
+--test_inference_mapping_data_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/target_subword_to_word_mapping.pkl \
+--checkpoint_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/hypernetwork_training_logs/2025-01-08_16-35-12/checkpoints/model-epoch=119.ckpt \
+--keep_dim 100
 ```
 
 To create the target matrix use
@@ -79,7 +79,7 @@ bash evaluation/tagging/evaluate_ner_xlmr.sh
 To calculate avg f1 score from a test_results.txt file
 ```bash
 python evaluation/tagging/calculate_avg_metrics.py \
---file_path evaluation/tagging/ner/hyperofa_xlm_all_100_checkpoint-0/test_results.txt
+--file_path evaluation/tagging/pos/hyperofa_rob_all_400_checkpoint-0/test_results.txt
 ```
 
 # OLD README

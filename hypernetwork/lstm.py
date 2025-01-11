@@ -32,6 +32,7 @@ class LSTMModel(nn.Module):
         self.linear_output_layers = nn.Sequential(
             nn.Linear(2 * hidden_dim, 2 * output_dim),
             nn.GELU(),
+            nn.Dropout(p=dropout),
             nn.Linear(2 * output_dim, output_dim)
         )
 
@@ -56,7 +57,7 @@ class LSTMModel(nn.Module):
         # We use the last hidden state for output
         # h_n contains the hidden state for both directions
         # Concatenate the forward and backward hidden states
-        h_n_bidirectional = torch.cat((h_n[-2], h_n[-1]), dim=-1)  # Concatenate last forward and backward states
+        h_n_bidirectional = torch.cat((h_n[-2], h_n[-1]), dim=-1)
         x = self.linear_output_layers(h_n_bidirectional)  # (batch_size, output_dim)
 
         return x

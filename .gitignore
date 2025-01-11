@@ -21,4 +21,5 @@ evaluation/tagging/pos
 evaluation/tagging/pos_tokenized_glot500
 
 # Experimental bash scripts
-test_metrics_5_epochs.bash
+bash_scripts/
+bash_outputs/

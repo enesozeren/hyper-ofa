@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import Dataset
+from torch.utils.data import Sampler
 import numpy as np
 import random
 
@@ -43,6 +44,39 @@ class OFADataset(Dataset):
 
         return inputs, target
 
+class CustomGroupedSampler(Sampler):
+    def __init__(self, dataset, batch_size):
+        """
+        Args:
+            dataset (OFADataset): The dataset from which to sample.
+            batch_size (int): The batch size for sampling.
+        """
+        self.dataset = dataset
+        self.batch_size = batch_size
+
+        # Create pairs of (index, sequence length) for each input
+        self.seq_length_pairs = [(idx, len(seq)) for idx, seq in enumerate(dataset.inputs)]
+
+    def __iter__(self):
+        # Shuffle the sequence length pairs to introduce randomness
+        random.shuffle(self.seq_length_pairs)
+
+        # Group sequences by their lengths (group size is 100 times the batch size)
+        group_size = self.batch_size * 40
+        groups = []
+
+        for index in range(0, len(self.seq_length_pairs), group_size):
+            group = self.seq_length_pairs[index:index + group_size]
+            # Sort the group by sequence length
+            sorted_group = sorted(group, key=lambda x: x[1])
+            # Add the indices of sorted sequences to the group list
+            groups.extend([idx for idx, _ in sorted_group])
+
+        # Yield the indices for each batch
+        return iter(groups)
+
+    def __len__(self):
+        return len(self.dataset)
 
 def custom_collate_fn(batch, pad_idx):
     '''

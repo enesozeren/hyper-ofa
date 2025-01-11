@@ -17,7 +17,7 @@
 MODEL="roberta-base"
 MODEL_TYPE="roberta"
 
-NUM_PRIMITIVE=100
+NUM_PRIMITIVE=400
 # set checkpoint_num=0 to use models without continue pretraining
 CHECKPOINT_NUM=0
 # set random_initialization "true" to use models with random initialization for embeddings of new words
@@ -37,7 +37,7 @@ MAX_LENGTH=256
 DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/pos/"
 OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/tagging/pos/"
 TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/tagging/pos_tokenized"
-EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/hypernetwork_training_logs/2025-01-04_22-43-39/hyperofa_rob_all_100"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/hypernetwork_training_logs/2025-01-11_00-21-58/hyperofa_rob_all_400"
 
 python -u evaluation/tagging/evaluate_pos.py \
     --model_type $MODEL_TYPE \
