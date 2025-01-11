@@ -38,7 +38,7 @@ from transformers import (CONFIG_MAPPING, MODEL_FOR_MASKED_LM_MAPPING,
                           XLMRobertaXLForMaskedLM, is_torch_tpu_available,
                           set_seed)
 from transformers.trainer_utils import get_last_checkpoint
-from model_loader_extra import get_embedding_path, load_assembled_model
+from model_loader_extra import load_assembled_model
 import numpy as np
 import torch
 
@@ -112,9 +112,9 @@ class ModelArguments:
             )
         },
     )
-    embedding_path: str = field(
-        default="/mounts/data/proj/yihong/newhome/OFA/stored_factorization/updated",
-        metadata={"help": "The path where the intilaized embeddings are"},
+    embedding_dir: str = field(
+        default="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/hypernetwork_training_logs/2025-01-11_00-21-58/hyperofa_rob_all_400",
+        metadata={"help": "The directory where the intilaized embeddings are"},
     )
     only_eng_vocab: bool = field(
         default=False,
@@ -264,7 +264,7 @@ def main():
     last_checkpoint = None
 
     if model_args.use_initialization:
-        embedding_name = get_embedding_path(model_args.model_name_or_path, model_args.num_primitive, model_args.only_eng_vocab, model_args.random_initialization)
+        embedding_name = model_args.embedding_dir.split('/')[-1]
         training_args.output_dir += f"_{embedding_name}"
     else:
         training_args.output_dir += f"{model_args.model_name_or_path}"
@@ -396,7 +396,7 @@ def main():
 
         if model_args.use_initialization:
             # using the assembled_model
-            model = load_assembled_model(model_args.model_name_or_path, model_args.num_primitive, model_args.only_eng_vocab, model_args.embedding_path, model_args.random_initialization)
+            model = load_assembled_model(model_args.model_name_or_path, model_args.num_primitive, model_args.embedding_dir, model_args.random_initialization)
             assert model.config.vocab_size == len(tokenizer)
             if last_checkpoint is not None:
                 # loading the model from checkpoint
@@ -416,7 +416,7 @@ def main():
             
         if model_args.use_initialization:
             # using the assembled_model
-            model = load_assembled_model(model_args.model_name_or_path, model_args.num_primitive, model_args.only_eng_vocab, model_args.embedding_path, model_args.random_initialization)
+            model = load_assembled_model(model_args.model_name_or_path, model_args.num_primitive, model_args.embedding_dir, model_args.random_initialization)
             assert model.config.vocab_size == len(tokenizer)
 
     # Preprocessing the datasets.

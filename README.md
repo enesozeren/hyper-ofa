@@ -79,7 +79,7 @@ bash evaluation/tagging/evaluate_ner_xlmr.sh
 To calculate avg f1 score from a test_results.txt file
 ```bash
 python evaluation/tagging/calculate_avg_metrics.py \
---file_path evaluation/tagging/pos/hyperofa_rob_all_400_checkpoint-0/test_results.txt
+--file_path evaluation/tagging/pos/hyperofa_xlm_all_400_checkpoint-0/test_results.txt
 ```
 
 # OLD README
