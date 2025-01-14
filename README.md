@@ -1,27 +1,72 @@
 # HyperOFA
 
-## HyperOfa initialization steps
+HyperOFA: Expanding LLM Vocabulary to New Languages via Hypernetwork Based Embedding Initialization
 
-To create mapping dataset use
+Abstract:
+Most pretrained language models are developed primarily for high-resource languages, limiting their usability in low-resource languages. A common approach to adapt these models for low-resource languages involves introducing new tokens specific to these languages and continuing pretraining. However, the method used to initialize these newly introduced tokens significantly impacts the duration and efficiency of continued pretraining. Poor initialization can lead to longer training times and increased computational costs. WECHSEL (Minixhofer et al., 2021) and OFA (Liu et al., 2023) methods provide a more effective initialization strategy. Building on this, HyperOFA introduces a hypernetwork-based approach to initialize new tokens more effectively.
+
+[Check the paper here](tbd)
+
+## File Structure
+
+```
+.
+├── README.md
+├── evaluation							<- retrieval, taggin, taxi1500 evluations
+├── model_loader_extra.py
+├── modeling_roberta_extra.py
+├── modeling_xlmr_extra.py
+├── hypernetwork
+│   ├── configs							<- this folder contains a config file for hypernetwork training / inference
+│   ├── dataset.py						<- contains dataset, sampler and collate_fn for hypernetwork training
+│   ├── lightning_modules.py			<- contains custom loss, lightning model class definitions
+│   ├── lstm.py							<- BiLSTM hypernetwork architecture
+│   ├── setformer.py					<- Transformer without positional encoding hypernetwork architecture
+│   ├── train.py						<- training script for the hypernetwork
+│   └── utils.py						<- util functions
+├── ofa
+│   ├── create_mapping_dataset.py		<- creates the mapping from tokens to words
+│   ├── train_mapping_model.py			<- trains the hypernetwork
+│   ├── mapping_model_inference.py		<- predicts the target token embeddings with the hypernetwork
+│   ├── init_target_matrix.py			<- initializes the embedding matrix with the hypernetwork
+│   ├── original_ofa_test.bash			<- calculates test metrics for OFA initializations
+│   ├── random_init.bash				<- initilizes the embedding matrix randomly after copying matched ones
+│   └── utils.py						<- util functions
+├── model_loader_extra.py				<- more util functions from OFA
+├── modeling_roberta_extra.py			<- custom model definitions for OFA roberta
+├── modeling_xlmr_extra.py				<- custom model definitions for OFA xlm-roberta
+├── requirements.txt					<- required python packages
+├── run_extra.py						<- continued pre-training script
+├── train_bash_roberta.sh				<- bash script for continued pre-training roberta
+└── train_bash_xlm_roberta.sh			<- bash script for continued pre-training xlm-roberta
+```
+
+## Initializing Embeddings with HyperOfa
+
+Follow these steps to initialize `roberta-base` (or `xlm-roberta-base`) model.
+
+Step 0) You need to download the [ColexNet+](https://github.com/cisnlp/ColexificationNet) word vectors.
+
+Step 1) Create mapping dataset introduced in [OFA](https://github.com/cisnlp/ofa)
 ```bash
 python ofa/create_mapping_dataset.py \
 --word_vec_embedding_path colexnet_vectors/colexnet_vectors_minlang_50_200_10_updated.wv \
 --source_model_name roberta-base \
 --target_model_name cis-lmu/glot500-base \
---keep_dim 200 \
+--keep_dim 100 \
 --output_dir outputs
 ```
 
-To train hypernetwork use
+Step 2) Train the hypernetwork.
 ```bash
 python ofa/train_mapping_model.py \
 --word_vec_embedding_path colexnet_vectors/colexnet_vectors_minlang_50_200_10_updated.wv \
---keep_dim 200 \
---mapping_data_dir outputs/roberta-base_to_cis-lmu-glot500-base_dim-200/mapping_data \
+--keep_dim 100 \
+--mapping_data_dir outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data \
 --hypernetwork_config_path hypernetwork/configs/hypernetwork_config.yaml
 ```
 
-To calculate test metrics of hypernetwork use
+Step 2.5) You can calucalte test metrics of hypernetwork to asses the quality of the embeddings predicted by the hypernetwork (Replace the test_inference_mapping_data_path and checkpoint_path arguments w.r.t. your hypernetwork training outputs from Step 2).
 ```bash
 python ofa/mapping_model_inference.py \
 --test_or_inference test \
@@ -32,7 +77,7 @@ python ofa/mapping_model_inference.py \
 --keep_dim 100
 ```
 
-To make inference with hypernetwork use
+Step 3) Make inference with hypernetwork to predict the new token embeddings (Replace the test_inference_mapping_data_path, checkpoint_path arguments w.r.t. your hypernetwork training outputs from Step 2).
 ```bash
 python ofa/mapping_model_inference.py \
 --test_or_inference inference \
@@ -42,24 +87,26 @@ python ofa/mapping_model_inference.py \
 --keep_dim 100
 ```
 
-To create the target matrix use
+Step 4) Create the target matrix from the predicted embeddings from Step 3 (Replace the hypernetwork_predictions_path argument w.r.t. your outputs from Step 3). 
 ```bash
 python ofa/init_target_matrix.py \
---source_matrix_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data/source_matrix.npy \
---source_model_name xlm-roberta-base \
---hypernetwork_predictions_path outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/hypernetwork_training_logs/2025-01-02_13-50-08/inference_logs/prediction_dict.pkl
+--source_matrix_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/source_matrix.npy \
+--source_model_name roberta-base \
+--hypernetwork_predictions_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/hypernetwork_training_logs/2025-01-02_13-50-08/inference_logs/prediction_dict.pkl
 ```
+
+## Initializing Randomly
 
 To create the random initialized target matrix use
 ```bash
 python ofa/random_init.py \
---source_matrix_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data/source_matrix.npy \
+--source_matrix_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/source_matrix.npy \
 --source_model_name roberta-base
 ```
 
 ## Evaluation steps
 
-To perform Retrieval bible test, go to the .sh file below and edit the paths, and then run it with bash command
+To perform Retrieval / Tagging tests, go to the .sh files below and edit the paths, and then run them with these bash commands.
 ```bash
 bash evaluation/retrieval/evaluate_retrieval_bible_xlm.sh
 ```
@@ -82,282 +129,18 @@ python evaluation/tagging/calculate_avg_metrics.py \
 --file_path evaluation/tagging/pos/hyperofa_xlm_all_400_checkpoint-0/test_results.txt
 ```
 
-# OLD README
-# OFA
-
-This is the repository for the pipeline of **O**ne **F**or **A**ll Framework, which aims to find **a good initialization of subword embeddings** when we want to adapt a monolingual or multilingual PLM to many languages. The framework optionally applies matrix factorization to the original PLM subword embeddings and replaces the new subword embeddings with two smaller matrices, which can largely reduce the number of parameters. Therefore, the OFA framework can boost efficient **large-scale multilingual continued pretraining**, which is especially helpful to a limited computation budget. Some of the code is based on [Glot500](https://github.com/cisnlp/Glot500), [WECHSEL](https://github.com/CPJKU/wechsel) and [FOCUS](https://github.com/konstantinjdobler/focus).  
-
-Paper on arXiv: https://arxiv.org/abs/2311.08849  
-
-```
-.
-├── README.md
-├── evaluation
-│   ├── retrieval
-│   │   ├── bible_lang_list.txt
-│   │   ├── evaluate_retrieval_bible.py
-│   │   ├── evaluate_retrieval_bible_roberta.sh
-│   │   ├── evaluate_retrieval_bible_xlm.sh
-│   │   ├── evaluate_retrieval_tatoeba.py
-│   │   ├── evaluate_retrieval_tatoeba_roberta.sh
-│   │   ├── evaluate_retrieval_tatoeba_xlm.sh
-│   │   └── tatoeba_lang_list.txt
-│   ├── tagging
-│   │   ├── evaluate_ner.py
-│   │   ├── evaluate_ner.sh
-│   │   ├── evaluate_ner_xlmr.sh
-│   │   ├── evaluate_pos.py
-│   │   ├── evaluate_pos.sh
-│   │   ├── evaluate_pos_xlmr.sh
-│   │   ├── ner_lang_list.txt
-│   │   ├── pos_lang_list.txt
-│   │   ├── run_tag.py
-│   │   └── utils_tag.py
-│   └── taxi1500
-│       ├── evaluate.py
-│       ├── evaluate.sh
-│       ├── evaluate_xlmr.sh
-│       └── texi1500_lang_list.txt
-├── model_loader_extra.py
-├── modeling_roberta_extra.py
-├── modeling_xlmr_extra.py
-├── ofa
-│   ├── __init__.py
-│   ├── ofa.py
-│   ├── random_init.py
-│   ├── run_ofa.bash
-│   └── utils.py
-├── requirements.txt
-├── run_extra.py
-├── train_bash_roberta.sh
-└── train_bash_xlm_roberta.sh
-```
-
-## Subword Embedding Initialization
-
-Initializing the subword embeddings using the OFA framework:
-
-```
-cd ofa
-bash run_ofa.bash
-```
-
-This will create embedding matrices for the subwords in the target tokenizer under four different dimensions: \[100, 200, 400, 768\]. The embedding initialization is based on the vocabulary of the source and target tokenizer, the embedding layer of the source model, and the external multilingual embeddings. The multilingual word embeddings used in OFA can be downloaded [here](https://github.com/cisnlp/colexificationnet).
-
-To randomly initialize the unseen subword embeddings, run the following code:
-
-```
-cd ofa
-python random_init.py
-```
-
 ## Continued Pretraining
 
-We use the [Glot500-c](https://github.com/cisnlp/Glot500) corpus for continued-pretraining our models. The dataset contains more than 500 languages.
+For continued pretraining a subset of [Glot500-c](https://github.com/cisnlp/Glot500) corpus is used as training set.
 
-To continued-pretrain the model initialized with OFA (RoBERTa as the source model, i.e., monolingual as source), run:
-
+To continued-pretrain the model initialized with HyperOFA go the the .sh files below and adjust the parameters accordingly, then run it with bash command:
 ```
 bash train_bash_roberta.sh
 ```
-
-To continued-pretrain the model initialized with OFA (XLM-R as the source model, i.e., multilingual as source), run:
-
 ```
 bash train_bash_xlm_roberta.sh
 ```
 
-You can change the .sh files for specifying ```--num_primitive``` with the latent embedding dimensions you want to use (in \[100, 200, 400, 768\]), ```--use_initialization``` with True and ```--random_initialization``` with False if you use OFA framework to initialize and with True if you use random initialization.
-
-
-## Model Loading
-
-We release our models on Huggingface, you can download [ofa-multi-100](https://huggingface.co/yihongLiu/ofa-multi-100), [ofa-multi-200](https://huggingface.co/yihongLiu/ofa-multi-200), [ofa-multi-400](https://huggingface.co/yihongLiu/ofa-multi-400) and [ofa-multi-768](https://huggingface.co/yihongLiu/ofa-multi-768). The current HuggingFace Transformer does not support the model architecture **except for ofa-multi-768**.  
-
-
-To use **ofa-multi-768**, you could do something like the following, as its architecture is XLMRobertaForMaskedLM that HuggingFace supports:
-
-```python
->>> from transformers import pipeline
->>> MODEL_PATH = 'your_saved_model_path'
->>> mask_filler = pipeline('fill-mask', model=MODEL_PATH)
->>> mask_filler("Hello I'm a <mask> model.", tok_k=3)
-``` 
-
-or
-
-```python
-from transformers import XLMRobertaForMaskedLM, XLMRobertaTokenizer
-
-MODEL_PATH = 'your_saved_model_path'
-
-model = XLMRobertaForMaskedLM.from_pretrained(MODEL_PATH)
-tokenizer = XLMRobertaTokenizer.from_pretrained(MODEL_PATH)
-
-
-text = "Hello I'm a <mask> model."
-inputs = tokenizer(text, return_tensors="pt")
-mask_token_index = torch.where(inputs["input_ids"] == tokenizer.mask_token_id)[1]
-
-logits = model(**inputs).logits
-mask_token_logits = logits[0, mask_token_index, :]
-top_3_tokens = torch.topk(mask_token_logits, 3, dim=1).indices[0].tolist()
-
-
-for token in top_3_tokens:
-    print(text.replace(tokenizer.mask_token, tokenizer.decode([token])))
-
-``` 
-
-To use models **with smaller embedding dimensions**, you could do something like the following:
-
-
-```python
-
-# you have to import the architecture
-from modeling_xlmr_extra import XLMRobertaAssembledForMaskedLM
-from transformers import XLMRobertaTokenizer
-
-MODEL_PATH = 'your_saved_model_path'
-
-model = XLMRobertaAssembledForMaskedLM.from_pretrained(MODEL_PATH)
-tokenizer = XLMRobertaTokenizer.from_pretrained(MODEL_PATH)
-
-
-text = "Hello I'm a <mask> model."
-inputs = tokenizer(text, return_tensors="pt")
-mask_token_index = torch.where(inputs["input_ids"] == tokenizer.mask_token_id)[1]
-
-logits = model(**inputs).logits
-mask_token_logits = logits[0, mask_token_index, :]
-top_3_tokens = torch.topk(mask_token_logits, 3, dim=1).indices[0].tolist()
-
-
-for token in top_3_tokens:
-    print(text.replace(tokenizer.mask_token, tokenizer.decode([token])))
-
-``` 
-
-
-## Evaluation
-
-### Dataset Preparation
-
-Please refer to [Glot500](https://github.com/cisnlp/Glot500) for downloading the datasets used for evaluation.
-
-### Sentence Retrieval - Bible
-
-For SR-B, first go to evaluation/retrieval'.  
-
-
-If you want to evaluate the ofa-mono-xxx models, run:
-```
-bash evaluate_retrieval_bible_roberta.sh
-```
-
-
-If you want to evaluate the ofa-multi-xxx models, run:
-```
-bash evaluate_retrieval_bible_xlm.sh
-```
-
-
-### Sentence Retrieval - Tatoeba
-
-For SR-T, first go to evaluation/retrieval'.  
-
-
-If you want to evaluate the ofa-mono-xxx models, run:
-```
-bash evaluate_retrieval_tatoeba_roberta.sh
-```
-
-
-If you want to evaluate the ofa-multi-xxx models, run:
-```
-bash evaluate_retrieval_tatoeba_xlm.sh
-```
-
-
-### Text Classification - Taxi1500
-
-First go to evaluation/taxi1500'.  
-
-
-If you want to evaluate the ofa-mono-xxx models, run:
-```
-bash evaluate.sh
-```
-
-
-If you want to evaluate the ofa-multi-xxx models, run:
-```
-bash evaluate_xlmr.sh
-```
-
-
-### Named Entity Recognition
-
-For NER, first go to evaluation/tagging'.  
-
-
-If you want to evaluate the ofa-mono-xxx models, run:
-```
-bash evaluate_ner.sh
-```
-
-
-If you want to evaluate the ofa-multi-xxx models, run:
-```
-bash evaluate_ner_xlmr.sh
-```
-
-### Part-Of-Speech Tagging
-
-For POS, first go to evaluation/tagging'.  
-
-
-If you want to evaluate the ofa-mono-xxx models, run:
-```
-bash evaluate_pos.sh
-```
-
-
-If you want to evaluate the ofa-multi-xxx models, run:
-```
-bash evaluate_pos_xlmr.sh
-```
-
-
-## Citation
-
-If you find our code, model, or data useful for your research, please considering citing:
-
-```
-@article{liu2023ofa,
- title={OFA: A Framework of Initializing Unseen Subword Embeddings for Efficient Large-scale Multilingual Continued Pretraining}
- author={Liu, Yihong and Lin, Peiqin and Wang, Mingyang and Sch{\"u}tze, Hinrich},
- journal={arXiv preprint arXiv:2311.08849},
- year={2023}
-}
-```
-
-or
-
-```
-@inproceedings{imanigooghari-etal-2023-glot500,
-	title        = {Glot500: Scaling Multilingual Corpora and Language Models to 500 Languages},
-	author       = {ImaniGooghari, Ayyoob  and Lin, Peiqin  and Kargaran, Amir Hossein  and Severini, Silvia  and Jalili Sabet, Masoud  and Kassner, Nora  and Ma, Chunlan  and Schmid, Helmut  and Martins, Andr{\'e}  and Yvon, Fran{\c{c}}ois  and Sch{\"u}tze, Hinrich},
-	year         = 2023,
-	month        = jul,
-	booktitle    = {Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)},
-	publisher    = {Association for Computational Linguistics},
-	address      = {Toronto, Canada},
-	pages        = {1082--1117},
-	url          = {https://aclanthology.org/2023.acl-long.61}
-}
-```
-
 ## Acknowledgements
 
-This repository is built on top of [transformers](https://github.com/huggingface/transformers), [xtreme](https://github.com/google-research/xtreme), [Glot500](https://github.com/cisnlp/Glot500), [WECHSEL](https://github.com/CPJKU/wechsel) and [FOCUS](https://github.com/konstantinjdobler/focus).
+This repository is built on top of [OFA](https://github.com/cisnlp/ofa) which was also built on top of [transformers](https://github.com/huggingface/transformers), [xtreme](https://github.com/google-research/xtreme), [Glot500](https://github.com/cisnlp/Glot500), [WECHSEL](https://github.com/CPJKU/wechsel) and [FOCUS](https://github.com/konstantinjdobler/focus).

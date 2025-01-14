@@ -7,6 +7,8 @@ datasets
 .vscode
 *.sbatch
 *.log
+caches
+continued_pretraining
 
 # Evaluation results
 evaluation/retrieval/bible

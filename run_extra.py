@@ -372,13 +372,9 @@ def main():
         tokenizer = XLMRobertaTokenizer.from_pretrained(model_args.model_name_or_path, **tokenizer_kwargs)
         tokenizer.vocab_file = model_args.spm_name
         tokenizer.sp_model.load(tokenizer.vocab_file)
-    elif model_args.model_name_or_path:
-        tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path, **tokenizer_kwargs)
     else:
-        raise ValueError(
-            "You are instantiating a new tokenizer from scratch. This is not supported by this script."
-            "You can do it from another script, save it, and load it from here, using --tokenizer_name."
-        )
+        # the following is the glot500 tokenizer
+        tokenizer = AutoTokenizer.from_pretrained('cis-lmu/glot500-base')
 
     if model_args.model_name_or_path:
         model = AutoModelForMaskedLM.from_pretrained(
@@ -396,6 +392,7 @@ def main():
 
         if model_args.use_initialization:
             # using the assembled_model
+            logger.info("====================================Using Assembled Model====================================")
             model = load_assembled_model(model_args.model_name_or_path, model_args.num_primitive, model_args.embedding_dir, model_args.random_initialization)
             assert model.config.vocab_size == len(tokenizer)
             if last_checkpoint is not None:
