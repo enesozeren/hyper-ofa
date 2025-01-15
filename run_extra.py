@@ -41,6 +41,7 @@ from transformers.trainer_utils import get_last_checkpoint
 from model_loader_extra import load_assembled_model
 import numpy as np
 import torch
+from modeling_roberta_extra import CustomTrainer
 
 logger = logging.getLogger(__name__)
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_MASKED_LM_MAPPING.keys())
@@ -332,7 +333,7 @@ def main():
             extension,
             data_files=data_files,
             cache_dir=model_args.cache_dir,
-            use_auth_token=True if model_args.use_auth_token else None,
+            # use_auth_token=True if model_args.use_auth_token else None,
         )
 
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
@@ -377,19 +378,6 @@ def main():
         tokenizer = AutoTokenizer.from_pretrained('cis-lmu/glot500-base')
 
     if model_args.model_name_or_path:
-        model = AutoModelForMaskedLM.from_pretrained(
-            model_args.model_name_or_path,
-            from_tf=bool(".ckpt" in model_args.model_name_or_path),
-            config=config,
-            cache_dir=model_args.cache_dir,
-            revision=model_args.model_revision,
-            use_auth_token=True if model_args.use_auth_token else None,
-        )
-        embedding_size = model.get_input_embeddings().weight.shape[0]
-        if len(tokenizer) > embedding_size:
-            logger.info("New vocabulary size: %s" % len(tokenizer))
-            model.resize_token_embeddings(len(tokenizer))
-
         if model_args.use_initialization:
             # using the assembled_model
             logger.info("====================================Using Assembled Model====================================")
@@ -402,7 +390,21 @@ def main():
                 model.load_state_dict(state_dict, strict=False)
                 uninitialized_params = {k: v for k, v in model.state_dict().items() if k not in state_dict}
                 for k, v in uninitialized_params.items():
-                    logger.info(f"{k} is randomly initialized!")
+                    logger.info(f"{k} is randomly initialized!")     
+        else:
+            model = AutoModelForMaskedLM.from_pretrained(
+                model_args.model_name_or_path,
+                from_tf=bool(".ckpt" in model_args.model_name_or_path),
+                config=config,
+                cache_dir=model_args.cache_dir,
+                revision=model_args.model_revision,
+                use_auth_token=True if model_args.use_auth_token else None,
+            )
+            embedding_size = model.get_input_embeddings().weight.shape[0]
+            if len(tokenizer) > embedding_size:
+                logger.info("New vocabulary size: %s" % len(tokenizer))
+                model.resize_token_embeddings(len(tokenizer))
+
     else:
         logger.info("Training new model from scratch")
         model = AutoModelForMaskedLM.from_config(config)
@@ -473,7 +475,7 @@ def main():
         # We use `return_special_tokens_mask=True` because DataCollatorForLanguageModeling (see below) is more
         # efficient when it receives the `special_tokens_mask`.
         def tokenize_function(examples):
-            return tokenizer(examples[text_column_name], return_special_tokens_mask=True)
+            return tokenizer(examples[text_column_name], return_special_tokens_mask=True, truncation=True, max_length=512)
 
         t_func = lambda examples: tokenize_function(examples)
         with training_args.main_process_first(desc="dataset map tokenization"):
@@ -537,7 +539,7 @@ def main():
     )
 
     # Initialize our Trainer
-    trainer = Trainer(
+    trainer = CustomTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset if training_args.do_train else None,

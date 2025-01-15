@@ -8,7 +8,6 @@ datasets
 *.sbatch
 *.log
 caches
-continued_pretraining
 
 # Evaluation results
 evaluation/retrieval/bible
@@ -25,3 +24,7 @@ evaluation/tagging/pos_tokenized_glot500
 # Experimental bash scripts
 bash_scripts/
 bash_outputs/
+
+# Continued pretraining
+continued_pretraining/outputs
+continued_pretraining/dataset

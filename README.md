@@ -132,12 +132,18 @@ python evaluation/tagging/calculate_avg_metrics.py \
 ## Continued Pretraining
 
 For continued pretraining a subset of [Glot500-c](https://github.com/cisnlp/Glot500) corpus is used as training set.
+To create the same subset use the script below.
+```bash
+python continued_pretraining/create_training_dataset.py \
+--output_path continued_pretraining/dataset \
+--batch_size 1000000
+```
 
 To continued-pretrain the model initialized with HyperOFA go the the .sh files below and adjust the parameters accordingly, then run it with bash command:
-```
+```bash
 bash train_bash_roberta.sh
 ```
-```
+```bash
 bash train_bash_xlm_roberta.sh
 ```
 

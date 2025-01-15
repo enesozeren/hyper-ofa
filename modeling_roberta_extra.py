@@ -54,7 +54,8 @@ from transformers.utils import (
 )
 from transformers.models.roberta.configuration_roberta import RobertaConfig
 from torch.nn import functional as F
-
+from transformers import Trainer
+import os
 
 logger = logging.get_logger(__name__)
 
@@ -71,6 +72,28 @@ ROBERTA_PRETRAINED_MODEL_ARCHIVE_LIST = [
     # See all RoBERTa models at https://huggingface.co/models?filter=roberta
 ]
 
+class CustomTrainer(Trainer):
+    def _save(self, output_dir: Optional[str] = None, state_dict=None):
+        """Override the _save method to handle shared tensors"""
+        # Save the model
+        if self.args.should_save:
+            if output_dir is None:
+                output_dir = self.args.output_dir
+                
+            # Save model with safe_serialization=False
+            self.model.save_pretrained(
+                output_dir,
+                safe_serialization=False,  # This is the key change
+                state_dict=state_dict if state_dict is not None else self.model.state_dict(),
+            )
+            
+            # Save tokenizer if we have one
+            if self.tokenizer is not None:
+                self.tokenizer.save_pretrained(output_dir)
+                
+            # Save trainer state as usual
+            if self.state.is_world_process_zero:
+                self.state.save_to_json(os.path.join(output_dir, "trainer_state.json"))
 
 class LinearTranspose(nn.Module):
     def __init__(self, in_features, out_features):
