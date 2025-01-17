@@ -26,14 +26,15 @@ LAYER=7
 # set use_initialization "true" to use models with initialization
 USE_INITIALIZATION="true"
 # set checkpoint_num=0 to use models without continue pretraining
-CHECKPOINT_NUM=0
+CHECKPOINT_NUM=4000
 # set random_initialization "true" to use models with random initialization for embeddings of new words
 RANDOM_INITIALIZATION="false"
 # paths
 DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/retrieval_bible_test/"
 OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/retrieval/bible/"
 TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/retrieval/bible_tokenized_xlm_r"
-EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/hypernetwork_training_logs/2025-01-11_16-25-04/hyperofa_xlm_all_400"
+EMBEDDING_DIR=""
+INIT_CHECKPOINT=""
 
 python -u evaluation/retrieval/evaluate_retrieval_bible.py \
     --model_type $MODEL_TYPE \
@@ -52,5 +53,5 @@ python -u evaluation/retrieval/evaluate_retrieval_bible.py \
     --num_primitive $NUM_PRIMITIVE \
     --tokenized_dir $TOKENIZED_DIR \
     --checkpoint_num $CHECKPOINT_NUM \
-    --init_checkpoint 0 \
+    --init_checkpoint $INIT_CHECKPOINT \
     --embedding_dir $EMBEDDING_DIR

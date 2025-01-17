@@ -1,4 +1,4 @@
-from ofa.utils import (
+from hyperofa.utils import (
     get_subword_embeddings_in_word_embedding_space,
     perform_factorize,
     get_overlapping_tokens,

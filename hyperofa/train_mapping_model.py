@@ -1,4 +1,4 @@
-from ofa.utils import WordEmbedding
+from hyperofa.utils import WordEmbedding
 from hypernetwork.utils import (
     train_val_test_split, 
     create_input_target_pairs)

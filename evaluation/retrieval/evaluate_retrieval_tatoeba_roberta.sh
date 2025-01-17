@@ -26,14 +26,15 @@ LAYER=7
 # set use_initialization "true" to use models with initialization
 USE_INITIALIZATION="true"
 # set checkpoint_num=0 to use models without continue pretraining
-CHECKPOINT_NUM=0
+CHECKPOINT_NUM=4000
 # set random_initialization "true" to use models with random initialization for embeddings of new words
 RANDOM_INITIALIZATION="false"
 # paths
 DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/retrieval_tatoeba/"
 OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/retrieval/tatoeba/"
 TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/retrieval/tatoeba_tokenized_roberta"
-EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/ofa_mono_100_mac"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/ofa_mono_400"
+INIT_CHECKPOINT="/dss/dsshome1/0B/ra32qov2/hyper-ofa/continued_pretraining/outputs/_ofa_mono_400/checkpoint-$CHECKPOINT_NUM"
 
 python -u evaluation/retrieval/evaluate_retrieval_tatoeba.py \
     --model_type $MODEL_TYPE \
@@ -52,6 +53,6 @@ python -u evaluation/retrieval/evaluate_retrieval_tatoeba.py \
     --checkpoint_num $CHECKPOINT_NUM \
     --num_primitive $NUM_PRIMITIVE \
     --tokenized_dir $TOKENIZED_DIR \
-    --init_checkpoint 0 \
+    --init_checkpoint $INIT_CHECKPOINT \
     --embedding_dir $EMBEDDING_DIR
 

@@ -9,7 +9,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import CSVLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 
-from ofa.utils import WordEmbedding
+from hyperofa.utils import WordEmbedding
 from hypernetwork.dataset import OFADataset, CustomGroupedSampler, custom_collate_fn
 from hypernetwork.utils import create_word_embedding_matrix
 from hypernetwork.lightning_modules import HypernetworkLightning, LiveLossPlotCallback

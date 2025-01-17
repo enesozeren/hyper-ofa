@@ -1,4 +1,4 @@
-from ofa.utils import (
+from hyperofa.utils import (
     get_subword_to_word_mappings,
     perform_factorize,
     WordEmbedding

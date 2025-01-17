@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import yaml
 
-from ofa.utils import WordEmbedding
+from hyperofa.utils import WordEmbedding
 
 # Create embedding matrix from the ColexNet embeddings (multilingual_embeddings)
 def create_word_embedding_matrix(multilingual_embeddings: WordEmbedding):

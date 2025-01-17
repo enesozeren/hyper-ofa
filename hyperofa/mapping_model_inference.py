@@ -6,7 +6,7 @@ import os
 from gensim.models import KeyedVectors
 
 from hypernetwork.inference import hypernetwork_inference
-from ofa.utils import (
+from hyperofa.utils import (
     WordEmbedding
 )
 

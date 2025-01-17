@@ -16,6 +16,8 @@ Most pretrained language models are developed primarily for high-resource langua
 ├── model_loader_extra.py
 ├── modeling_roberta_extra.py
 ├── modeling_xlmr_extra.py
+├── continued_pretraining
+│   └── create_training_dataset.py      <- creates dataset for continued pretraining
 ├── hypernetwork
 │   ├── configs							<- this folder contains a config file for hypernetwork training / inference
 │   ├── dataset.py						<- contains dataset, sampler and collate_fn for hypernetwork training
@@ -24,12 +26,12 @@ Most pretrained language models are developed primarily for high-resource langua
 │   ├── setformer.py					<- Transformer without positional encoding hypernetwork architecture
 │   ├── train.py						<- training script for the hypernetwork
 │   └── utils.py						<- util functions
-├── ofa
+├── hyperofa
 │   ├── create_mapping_dataset.py		<- creates the mapping from tokens to words
 │   ├── train_mapping_model.py			<- trains the hypernetwork
 │   ├── mapping_model_inference.py		<- predicts the target token embeddings with the hypernetwork
 │   ├── init_target_matrix.py			<- initializes the embedding matrix with the hypernetwork
-│   ├── original_ofa_test.bash			<- calculates test metrics for OFA initializations
+│   ├── ofa_initialize_test_set.bash    <- calculates test metrics for OFA initializations
 │   ├── random_init.bash				<- initilizes the embedding matrix randomly after copying matched ones
 │   └── utils.py						<- util functions
 ├── model_loader_extra.py				<- more util functions from OFA
@@ -49,7 +51,7 @@ Step 0) You need to download the [ColexNet+](https://github.com/cisnlp/Colexific
 
 Step 1) Create mapping dataset introduced in [OFA](https://github.com/cisnlp/ofa)
 ```bash
-python ofa/create_mapping_dataset.py \
+python hyperofa/create_mapping_dataset.py \
 --word_vec_embedding_path colexnet_vectors/colexnet_vectors_minlang_50_200_10_updated.wv \
 --source_model_name roberta-base \
 --target_model_name cis-lmu/glot500-base \
@@ -59,7 +61,7 @@ python ofa/create_mapping_dataset.py \
 
 Step 2) Train the hypernetwork.
 ```bash
-python ofa/train_mapping_model.py \
+python hyperofa/train_mapping_model.py \
 --word_vec_embedding_path colexnet_vectors/colexnet_vectors_minlang_50_200_10_updated.wv \
 --keep_dim 100 \
 --mapping_data_dir outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data \
@@ -68,7 +70,7 @@ python ofa/train_mapping_model.py \
 
 Step 2.5) You can calucalte test metrics of hypernetwork to asses the quality of the embeddings predicted by the hypernetwork (Replace the test_inference_mapping_data_path and checkpoint_path arguments w.r.t. your hypernetwork training outputs from Step 2).
 ```bash
-python ofa/mapping_model_inference.py \
+python hyperofa/mapping_model_inference.py \
 --test_or_inference test \
 --source_matrix_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/source_matrix.npy \
 --hypernetwork_config_path hypernetwork/configs/hypernetwork_config.yaml \
@@ -79,7 +81,7 @@ python ofa/mapping_model_inference.py \
 
 Step 3) Make inference with hypernetwork to predict the new token embeddings (Replace the test_inference_mapping_data_path, checkpoint_path arguments w.r.t. your hypernetwork training outputs from Step 2).
 ```bash
-python ofa/mapping_model_inference.py \
+python hyperofa/mapping_model_inference.py \
 --test_or_inference inference \
 --hypernetwork_config_path hypernetwork/configs/hypernetwork_config.yaml \
 --test_inference_mapping_data_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/target_subword_to_word_mapping.pkl \
@@ -89,7 +91,7 @@ python ofa/mapping_model_inference.py \
 
 Step 4) Create the target matrix from the predicted embeddings from Step 3 (Replace the hypernetwork_predictions_path argument w.r.t. your outputs from Step 3). 
 ```bash
-python ofa/init_target_matrix.py \
+python hyperofa/init_target_matrix.py \
 --source_matrix_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/source_matrix.npy \
 --source_model_name roberta-base \
 --hypernetwork_predictions_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/hypernetwork_training_logs/2025-01-02_13-50-08/inference_logs/prediction_dict.pkl
@@ -99,7 +101,7 @@ python ofa/init_target_matrix.py \
 
 To create the random initialized target matrix use
 ```bash
-python ofa/random_init.py \
+python hyperofa/random_init.py \
 --source_matrix_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/source_matrix.npy \
 --source_model_name roberta-base
 ```

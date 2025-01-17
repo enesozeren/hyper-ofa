@@ -4,7 +4,7 @@ import os
 from transformers import AutoTokenizer
 import numpy as np
 
-from ofa.utils import (
+from hyperofa.utils import (
     get_overlapping_tokens
 )
 

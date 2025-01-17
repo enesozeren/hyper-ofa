@@ -638,7 +638,6 @@ def main():
         # in this case, the tokenizer should all be glot500 tokenizer
         if args.use_initialization:
             embedding_name = args.embedding_dir.split('/')[-1]
-            args.init_checkpoint += f"LM_ofa_{embedding_name}/checkpoint-{str(args.checkpoint_num)}"
         else:
             args.init_checkpoint += f"{args.model_name_or_path}/checkpoint-{str(args.checkpoint_num)}"
         args.tokenized_dir += '_glot500/'
