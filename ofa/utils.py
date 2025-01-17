@@ -257,7 +257,7 @@ def create_target_embeddings(
     source_subword_embeddings,
     target_subword_embeddings,
     source_tokenizer,
-    test_source_token_ids,
+    target_tokenizer,
     source_matrix,
     target_matrix=None,
     overlapping_tokens=None,
@@ -269,7 +269,7 @@ def create_target_embeddings(
     :param source_subword_embeddings: initialized source subword embeddings
     :param target_subword_embeddings: initialized source subword embeddings
     :param source_tokenizer:
-    :param test_source_token_ids:
+    :param target_tokenizer:
     :param source_matrix: the source-language PLM subword embedding
     :param target_matrix: the initialized subword embedding for target languages
     :param overlapping_tokens: the overlapped tokens in source and target-language tokenizers
@@ -299,14 +299,14 @@ def create_target_embeddings(
 
     # all embeddings are initialized to zero first if no overlapped subword tokens are considered
     if target_matrix is None:
-        target_matrix = np.zeros((len(test_source_token_ids), source_matrix.shape[1]), dtype=source_matrix.dtype)
+        target_matrix = np.zeros((len(target_tokenizer), source_matrix.shape[1]), dtype=source_matrix.dtype)
     else:
         # this makes sure that the shape of embeddings match
-        assert np.shape(target_matrix) == (len(test_source_token_ids), source_matrix.shape[1])
+        assert np.shape(target_matrix) == (len(target_tokenizer), source_matrix.shape[1])
 
     mean, std = source_matrix.mean(0), source_matrix.std(0)
     random_fallback_matrix = \
-        np.random.RandomState(114514).normal(mean, std, (len(test_source_token_ids), source_matrix.shape[1]))
+        np.random.RandomState(114514).normal(mean, std, (len(target_tokenizer.vocab), source_matrix.shape[1]))
 
     batch_size = 1024
     n_matched = 0
@@ -329,12 +329,12 @@ def create_target_embeddings(
 
         # here the token_id is actually the index of the target-language PLM embeddings
         for token_id in range(start, end):
-            # if target_tokenizer.convert_ids_to_tokens(token_id) in overlapping_tokens:
-            #     # we only need to initialize additional_tokens
-            #     found[token_id] = target_tokenizer.convert_ids_to_tokens(token_id)
-            #     n_matched += 1
-            #     how_many_kept += 1
-            #     continue
+            if target_tokenizer.convert_ids_to_tokens(token_id) in overlapping_tokens:
+                # we only need to initialize additional_tokens
+                found[token_id] = target_tokenizer.convert_ids_to_tokens(token_id)
+                n_matched += 1
+                how_many_kept += 1
+                continue
 
             # for the token not overlapped, the initial embedding should be zero
             assert np.all(target_matrix[token_id] == 0)
@@ -347,7 +347,7 @@ def create_target_embeddings(
                 tokens, sims = zip(*closest)
                 weights = softmax(np.array(sims) / temperature, 0)
 
-                # found[token_id] = target_tokenizer.convert_ids_to_tokens(token_id)
+                found[token_id] = target_tokenizer.convert_ids_to_tokens(token_id)
 
                 emb = np.zeros(target_matrix.shape[1])
 
@@ -361,19 +361,19 @@ def create_target_embeddings(
             else:
                 # this is a random initialization
                 target_matrix[token_id] = random_fallback_matrix[token_id]
-                # not_found[token_id] = target_tokenizer.convert_ids_to_tokens(token_id)
+                not_found[token_id] = target_tokenizer.convert_ids_to_tokens(token_id)
                 how_many_randomly_updated += 1
 
     # this is to copy the special tokens
     # we only need to do this if we don't include overlapped tokens
-    # if additional_tokens is None and overlapping_tokens is None:
-    #     for token in source_tokenizer.special_tokens_map.values():
-    #         if isinstance(token, str):
-    #             token = [token]
+    if additional_tokens is None and overlapping_tokens is None:
+        for token in source_tokenizer.special_tokens_map.values():
+            if isinstance(token, str):
+                token = [token]
 
-    #         for t in token:
-    #             if t in target_tokenizer.vocab and t in additional_tokens:
-    #                 target_matrix[target_tokenizer.vocab[t]] = source_matrix[source_tokenizer.vocab[t]]
+            for t in token:
+                if t in target_tokenizer.vocab and t in additional_tokens:
+                    target_matrix[target_tokenizer.vocab[t]] = source_matrix[source_tokenizer.vocab[t]]
 
     logging.info(
         f"Matching token found for {n_matched} of {len(target_matrix)} tokens."
@@ -382,7 +382,7 @@ def create_target_embeddings(
     print(f"kept: {how_many_kept}")
     print(f"Updated well: {how_many_updated}")
     print(f"Updated randomly: {how_many_randomly_updated}")
-    return target_matrix
+    return target_matrix, not_found, found
 
 
 def perform_factorize(source_matrix, keep_dim=100):

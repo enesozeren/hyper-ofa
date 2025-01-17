@@ -20,7 +20,7 @@ MAX_LENGTH=512
 LC=""
 BATCH_SIZE=128
 DIM=768
-NUM_PRIMITIVE=400
+NUM_PRIMITIVE=100
 NLAYER=12
 LAYER=7
 # set use_initialization "true" to use models with initialization
@@ -33,7 +33,7 @@ RANDOM_INITIALIZATION="false"
 DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/retrieval_tatoeba/"
 OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/retrieval/tatoeba/"
 TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/retrieval/tatoeba_tokenized_roberta"
-EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/hypernetwork_training_logs/2025-01-11_00-21-58/hyperofa_rob_all_400"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/ofa_mono_100_mac"
 
 python -u evaluation/retrieval/evaluate_retrieval_tatoeba.py \
     --model_type $MODEL_TYPE \
