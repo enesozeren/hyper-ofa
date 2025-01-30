@@ -71,12 +71,15 @@ if __name__ == '__main__':
 
     # Load source matrix
     source_matrix = np.load(args.source_matrix_path)
+    print("Avg Source Embedding Norm: ", np.mean(np.linalg.norm(source_matrix, axis=1)))
     # Load primitive_embeddings
     primitive_embeddings = np.load(args.source_matrix_path.replace('source_matrix.npy', 'primitive_embeddings.npy'))
     
     # Load hypernetwork predictions
     with open(args.hypernetwork_predictions_path, 'rb') as f:
         hypernetwork_predictions = pickle.load(f)
+    print("Avg Hypernetwork Predicted Embedding Norm: ", 
+          np.mean([np.linalg.norm(array) for array in hypernetwork_predictions.values()]))
 
     # loading tokenizers and source-model embeddings
     source_tokenizer = AutoTokenizer.from_pretrained(args.source_model_name)  # source tok

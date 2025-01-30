@@ -131,6 +131,12 @@ python evaluation/tagging/calculate_avg_metrics.py \
 --file_path evaluation/tagging/pos/hyperofa_xlm_all_400_checkpoint-0/test_results.txt
 ```
 
+To calculate metrics for a subset of languages use:
+```bash
+python evaluation/calculate_avg_subset_lang_metrics.py \
+--file_path evaluation/retrieval/bible/hyperofa_xlm_all_400_checkpoint-4000/test_results.txt
+```
+
 ## Continued Pretraining
 
 For continued pretraining a subset of [Glot500-c](https://github.com/cisnlp/Glot500) corpus is used as training set.
