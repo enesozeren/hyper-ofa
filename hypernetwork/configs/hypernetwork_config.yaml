@@ -1,5 +1,5 @@
 model_hps:
-  num_layers: 4            # Number of transformer layers
+  num_layers: 2            # Number of transformer layers
   emb_dim: 200              # Dimension of word vectors (colexnet)
   hidden_dim: 1600
   dropout: 0.4              # Dropout rate
@@ -11,10 +11,10 @@ training_hps:
   lr: 0.0001
   lr_sched_step_size: 10
   lr_sched_gamma: 0.95
-  contrastive_temp: 0.25
+  contrastive_temp: 0.5
   loss_lambd: 0.1
   weight_decay: 0
-  epochs: 300
+  epochs: 600
   augmentation_threshold: 4
   augmentation_min_percentage: 0.5
   augmentation_keep_all_percentage: 0.5

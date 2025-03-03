@@ -2,7 +2,7 @@ from hyperofa.utils import WordEmbedding
 from hypernetwork.utils import (
     train_val_test_split, 
     create_input_target_pairs)
-from hypernetwork.train import train_hypernetwork
+from hypernetwork.train import train
 
 import os
 import argparse
@@ -13,7 +13,7 @@ from datetime import datetime
 from gensim.models import KeyedVectors
 
 
-def train_mapping_model(multilingual_embeddings, source_subword_to_word_mapping, 
+def train_hypernetwork(multilingual_embeddings, source_subword_to_word_mapping, 
                         source_matrix, hypernetwork_config_dict, output_dir):
     '''
     Train the hypernetwork model to learn the transformation from Word Vector Space to Subword Vector Space
@@ -39,7 +39,7 @@ def train_mapping_model(multilingual_embeddings, source_subword_to_word_mapping,
         pickle.dump(test_mapping_set, f)
     
     # Train the hypernetwork model to learn the transformation from Word Vector Space to Subword Vector Space
-    train_hypernetwork(hypernetwork_config_dict=hypernetwork_config_dict,
+    train(hypernetwork_config_dict=hypernetwork_config_dict,
                     multilingual_embeddings=multilingual_embeddings,
                     train_input_target_pairs=train_input_target_pairs,
                     val_input_target_pairs=val_input_target_pairs,
@@ -86,7 +86,7 @@ def main():
 
     hypernetwork_config_dict['model_hps']['output_dim'] = args.keep_dim
 
-    train_mapping_model(multilingual_embeddings, source_subword_to_word_mapping, 
+    train_hypernetwork(multilingual_embeddings, source_subword_to_word_mapping, 
                         source_matrix, hypernetwork_config_dict, output_dir)
 
 

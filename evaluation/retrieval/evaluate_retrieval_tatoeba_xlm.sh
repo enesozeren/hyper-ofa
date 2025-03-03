@@ -27,7 +27,9 @@ NUM_PRIMITIVE=400
 # set use_initialization "true" to use models with initialization
 USE_INITIALIZATION="true"
 # set checkpoint_num=0 to use models without continue pretraining
-CHECKPOINT_NUM=4000
+# CHECKPOINT_NUM=4000
+CHECKPOINT_NUM=0
+
 # set random_initialization "true" to use models with random initialization for embeddings of new words
 RANDOM_INITIALIZATION="false"
 
@@ -35,8 +37,9 @@ RANDOM_INITIALIZATION="false"
 DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/retrieval_tatoeba/"
 OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/retrieval/tatoeba/"
 TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/retrieval/tatoeba_tokenized_xlm_r"
-EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/hypernetwork_training_logs/2025-01-11_16-25-04/hyperofa_xlm_all_400"
-INIT_CHECKPOINT="/dss/dsshome1/0B/ra32qov2/hyper-ofa/continued_pretraining/outputs/_hyperofa_xlm_all_400/checkpoint-$CHECKPOINT_NUM"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/random_multi_400"
+# INIT_CHECKPOINT="/dss/dsshome1/0B/ra32qov2/hyper-ofa/continued_pretraining/outputs/_random_multi_400/checkpoint-$CHECKPOINT_NUM"
+INIT_CHECKPOINT=0
 
 python -u evaluation/retrieval/evaluate_retrieval_tatoeba.py \
     --model_type $MODEL_TYPE \

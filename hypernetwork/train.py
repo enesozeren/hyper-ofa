@@ -16,7 +16,7 @@ from hypernetwork.lightning_modules import HypernetworkLightning, LiveLossPlotCa
 from hypernetwork.lstm import LSTMModel
 from hypernetwork.setformer import SetFormer
 
-def train(model, model_config_dict: dict, 
+def _train(model, model_config_dict: dict, 
           train_loader: DataLoader, val_loader: DataLoader, output_dir: str):
     '''
     Train the hypernetwork model
@@ -64,7 +64,7 @@ def train(model, model_config_dict: dict,
     trainer.fit(pl_model, train_loader, val_loader)
 
 
-def train_hypernetwork(hypernetwork_config_dict: dict, multilingual_embeddings: WordEmbedding,
+def train(hypernetwork_config_dict: dict, multilingual_embeddings: WordEmbedding,
                     train_input_target_pairs: dict, val_input_target_pairs: dict, output_dir: str):
     '''
     Prepare the datasets and dataloaders, load the hypernetwork model, and call the train function
@@ -115,4 +115,4 @@ def train_hypernetwork(hypernetwork_config_dict: dict, multilingual_embeddings: 
                           padding_idx=hypernetwork_config_dict['model_hps']['padding_idx'])
 
     # Train the model
-    train(model, hypernetwork_config_dict, train_loader, val_loader, output_dir)
+    _train(model, hypernetwork_config_dict, train_loader, val_loader, output_dir)

@@ -88,7 +88,7 @@ def main():
                        default="caches",
                        help='Cache directory for huggingface load_dataset')
     parser.add_argument('--batch_size', type=int,
-                       default=10_000,
+                       default=100_000,
                        help='Batch size for writing to the file')
     parser.add_argument('--max_sentences', type=int,
                        default=5_000_000,
