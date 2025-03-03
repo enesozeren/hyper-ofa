@@ -12,35 +12,35 @@ Most pretrained language models are trained primarily for high-resource language
 ```
 .
 ├── README.md
-├── evaluation							    <- retrieval, taggin, taxi1500 evluations
+├── evaluation                              <- retrieval, taggin, taxi1500 evluations
 ├── model_loader_extra.py
 ├── modeling_roberta_extra.py
 ├── modeling_xlmr_extra.py
 ├── continued_pretraining
 │   └── create_training_dataset.py          <- creates dataset for continued pretraining
 ├── hypernetwork
-│   ├── configs							    <- this folder contains a config file for hypernetwork training / inference
-│   ├── dataset.py						    <- contains dataset, sampler and collate_fn for hypernetwork training
-│   ├── lightning_modules.py			    <- contains custom loss, lightning model class definitions
-│   ├── lstm.py							    <- BiLSTM hypernetwork architecture
-│   ├── setformer.py					    <- Transformer without positional encoding hypernetwork architecture
-│   ├── train.py						    <- training script for the hypernetwork
-│   └── utils.py						    <- util functions
+│   ├── configs                             <- this folder contains a config file for hypernetwork training / inference
+│   ├── dataset.py                          <- contains dataset, sampler and collate_fn for hypernetwork training
+│   ├── lightning_modules.py                <- contains custom loss, lightning model class definitions
+│   ├── lstm.py                             <- BiLSTM hypernetwork architecture
+│   ├── setformer.py                        <- Transformer without positional encoding hypernetwork architecture
+│   ├── train.py                            <- training script for the hypernetwork
+│   └── utils.py                            <- util functions
 ├── hyperofa
-│   ├── create_hypernetwork_train_data.py	<- creates the mapping from tokens to words
-│   ├── train_hypernetwork.py			    <- trains the hypernetwork
-│   ├── inference_hypernetwork.py		    <- predicts the target token embeddings with the hypernetwork
-│   ├── init_target_matrix.py			    <- initializes the embedding matrix with the hypernetwork
+│   ├── create_hypernetwork_train_data.py   <- creates the mapping from tokens to words
+│   ├── train_hypernetwork.py               <- trains the hypernetwork
+│   ├── inference_hypernetwork.py           <- predicts the target token embeddings with the hypernetwork
+│   ├── init_target_matrix.py               <- initializes the embedding matrix with the hypernetwork
 │   ├── ofa_initialize_test_set.bash        <- calculates test metrics for OFA initializations
-│   ├── random_init.bash				    <- initilizes the embedding matrix randomly after copying matched ones
-│   └── utils.py						    <- util functions
-├── model_loader_extra.py				    <- more util functions from OFA
-├── modeling_roberta_extra.py			    <- custom model definitions for OFA roberta
-├── modeling_xlmr_extra.py				    <- custom model definitions for OFA xlm-roberta
-├── requirements.txt					    <- required python packages
-├── run_extra.py						    <- continued pre-training script
-├── train_bash_roberta.sh				    <- bash script for continued pre-training roberta
-└── train_bash_xlm_roberta.sh			    <- bash script for continued pre-training xlm-roberta
+│   ├── random_init.bash                    <- initilizes the embedding matrix randomly after copying matched ones
+│   └── utils.py                            <- util functions
+├── model_loader_extra.py                   <- more util functions from OFA
+├── modeling_roberta_extra.py               <- custom model definitions for OFA roberta
+├── modeling_xlmr_extra.py                  <- custom model definitions for OFA xlm-roberta
+├── requirements.txt                        <- required python packages
+├── run_extra.py                            <- continued pre-training script
+├── train_bash_roberta.sh                   <- bash script for continued pre-training roberta
+└── train_bash_xlm_roberta.sh               <- bash script for continued pre-training xlm-roberta
 ```
 
 ## Initializing Embeddings with HyperOfa
