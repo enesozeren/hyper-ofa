@@ -58,7 +58,7 @@ def main():
     parser.add_argument('--mapping_data_dir', type=str, 
                         default='outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data', 
                         help='directory which contains mapping dataset')
-    parser.add_argument('--hypernetwork_config_path', type=str, default='hypernetwork/configs/hypernetwork_config.yaml',
+    parser.add_argument('--hypernetwork_config_path', type=str, default='hypernetwork/configs/bilstm_config.yaml',
                         help='hypernetwork config path')
 
     args = parser.parse_args()

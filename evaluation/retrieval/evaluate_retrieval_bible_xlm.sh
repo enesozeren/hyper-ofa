@@ -37,7 +37,7 @@ RANDOM_INITIALIZATION="false"
 DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/retrieval_bible_test/"
 OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/retrieval/bible/"
 TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/retrieval/bible_tokenized_xlm_r"
-EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/random_multi_400"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/hypernetwork_training_logs/2025-03-04_21-55-02/hyperofa_xlm_all_400"
 # INIT_CHECKPOINT="/dss/dsshome1/0B/ra32qov2/hyper-ofa/continued_pretraining/outputs/_random_multi_400/checkpoint-$CHECKPOINT_NUM"
 INIT_CHECKPOINT=0
 

@@ -17,7 +17,7 @@
 MODEL="xlm-roberta-base"
 MODEL_TYPE="xlmr"
 
-NUM_PRIMITIVE=200
+NUM_PRIMITIVE=400
 # set checkpoint_num=0 to use models without continue pretraining
 CHECKPOINT_NUM=0
 # set random_initialization "true" to use models with random initialization for embeddings of new words
@@ -37,7 +37,7 @@ MAX_LENGTH=256
 DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/ner/"
 OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/tagging/ner/"
 TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/tagging/ner_tokenized"
-EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/random_xlm_all_200"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/xlm-roberta-base_to_cis-lmu-glot500-base_dim-400/hypernetwork_training_logs/2025-03-04_21-55-02/hyperofa_xlm_all_400"
 
 python -u evaluation/tagging/evaluate_ner.py \
     --model_type $MODEL_TYPE \

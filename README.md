@@ -63,9 +63,9 @@ Step 2) Train the hypernetwork.
 ```bash
 python hyperofa/train_hypernetwork.py \
 --word_vec_embedding_path colexnet_vectors/colexnet_vectors_minlang_50_200_10_updated.wv \
---keep_dim 200 \
---mapping_data_dir outputs/roberta-base_to_cis-lmu-glot500-base_dim-200/mapping_data \
---hypernetwork_config_path hypernetwork/configs/hypernetwork_config.yaml
+--keep_dim 400 \
+--mapping_data_dir outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/mapping_data \
+--hypernetwork_config_path hypernetwork/configs/bilstm_config.yaml
 ```
 
 Step 2.5) You can calucalte test metrics of hypernetwork to asses the quality of the embeddings predicted by the hypernetwork (Replace the test_inference_mapping_data_path and checkpoint_path arguments w.r.t. your hypernetwork training outputs from Step 2).
@@ -73,7 +73,7 @@ Step 2.5) You can calucalte test metrics of hypernetwork to asses the quality of
 python hyperofa/inference_hypernetwork.py \
 --test_or_inference test \
 --source_matrix_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/source_matrix.npy \
---hypernetwork_config_path hypernetwork/configs/hypernetwork_config.yaml \
+--hypernetwork_config_path hypernetwork/configs/bilstm_config.yaml \
 --test_inference_mapping_data_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/hypernetwork_training_logs/2025-01-09_01-21-32/test_mapping_set.pkl \
 --checkpoint_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/hypernetwork_training_logs/2025-01-09_01-21-32/checkpoints/model-epoch=39.ckpt \
 --keep_dim 100
@@ -83,7 +83,7 @@ Step 3) Make inference with hypernetwork to predict the new token embeddings (Re
 ```bash
 python hyperofa/inference_hypernetwork.py \
 --test_or_inference inference \
---hypernetwork_config_path hypernetwork/configs/hypernetwork_config.yaml \
+--hypernetwork_config_path hypernetwork/configs/bilstm_config.yaml \
 --test_inference_mapping_data_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/mapping_data/target_subword_to_word_mapping.pkl \
 --checkpoint_path outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/hypernetwork_training_logs/2025-01-08_16-35-12/checkpoints/model-epoch=119.ckpt \
 --keep_dim 100
@@ -128,13 +128,13 @@ bash evaluation/tagging/evaluate_ner_xlmr.sh
 To calculate avg f1 score from a test_results.txt file
 ```bash
 python evaluation/tagging/calculate_avg_metrics.py \
---file_path evaluation/tagging/pos/random_rob_all_400_checkpoint-0/test_results.txt
+--file_path evaluation/tagging/ner/hyperofa_xlm_all_400_checkpoint-0/test_results.txt
 ```
 
 To calculate metrics for a subset of languages use:
 ```bash
 python evaluation/calculate_avg_subset_lang_metrics.py \
---file_path evaluation/tagging/pos/random_rob_all_400_checkpoint-0/test_results.txt \
+--file_path evaluation/tagging/ner/hyperofa_xlm_all_400_checkpoint-0/test_results.txt \
 --metric f1
 ```
 

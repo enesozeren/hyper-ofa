@@ -20,7 +20,7 @@ MAX_LENGTH=512
 LC=""
 BATCH_SIZE=128
 DIM=768
-NUM_PRIMITIVE=400
+NUM_PRIMITIVE=100
 NLAYER=12
 LAYER=7
 # set use_initialization "true" to use models with initialization
@@ -33,7 +33,7 @@ RANDOM_INITIALIZATION="false"
 DATA_DIR="/dss/dsshome1/0B/ra32qov2/datasets/retrieval_tatoeba/"
 OUTPUT_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/retrieval/tatoeba/"
 TOKENIZED_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/evaluation/retrieval/tatoeba_tokenized_roberta"
-EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/roberta-base_to_cis-lmu-glot500-base_dim-400/hypernetwork_training_logs/2025-03-03_08-14-02/hyperofa_rob_all_400"
+EMBEDDING_DIR="/dss/dsshome1/0B/ra32qov2/hyper-ofa/outputs/roberta-base_to_cis-lmu-glot500-base_dim-100/hypernetwork_training_logs/2025-03-05_08-54-09/hyperofa_rob_all_100"
 # INIT_CHECKPOINT="/dss/dsshome1/0B/ra32qov2/hyper-ofa/continued_pretraining/outputs/_random_rob_all_100/checkpoint-$CHECKPOINT_NUM"
 INIT_CHECKPOINT=0
 

@@ -42,7 +42,7 @@ def _train(model, model_config_dict: dict,
         save_top_k=1,
         monitor='val_loss',
         mode='min',
-        every_n_epochs=10
+        every_n_epochs=20
     )
 
     # Live loss plot callback
@@ -113,6 +113,14 @@ def train(hypernetwork_config_dict: dict, multilingual_embeddings: WordEmbedding
                           dropout=hypernetwork_config_dict['model_hps']['dropout'],
                           word_vector_emb=word_vector_emb_matrix,
                           padding_idx=hypernetwork_config_dict['model_hps']['padding_idx'])
+    # model = SetFormer(emb_dim=hypernetwork_config_dict['model_hps']['emb_dim'],
+    #                       num_heads=hypernetwork_config_dict['model_hps']['num_heads'],
+    #                       num_layers=hypernetwork_config_dict['model_hps']['num_layers'],
+    #                       output_dim=hypernetwork_config_dict['model_hps']['output_dim'],
+    #                       context_size=hypernetwork_config_dict['model_hps']['max_context_size'],
+    #                       dropout=hypernetwork_config_dict['model_hps']['dropout'],
+    #                       word_vector_emb=word_vector_emb_matrix,
+    #                       padding_idx=hypernetwork_config_dict['model_hps']['padding_idx'])                
 
     # Train the model
     _train(model, hypernetwork_config_dict, train_loader, val_loader, output_dir)
