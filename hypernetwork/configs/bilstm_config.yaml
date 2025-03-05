@@ -21,4 +21,4 @@ training_hps:
   num_workers: 16
 
 notes: >
-  Set Former training hyperparameters
+  BiLSTM network config
