@@ -5,7 +5,7 @@ HyperOFA: Expanding LLM Vocabulary to New Languages via Hypernetwork Based Embed
 Abstract:
 Most pretrained language models are trained primarily for high-resource languages, limiting their usability in mid and low-resource languages. A common approach to adapt these models for other languages involves introducing new tokens specific to these languages and continuing pretraining. However, the method used to initialize these newly introduced tokens significantly impacts the duration and efficiency of continued pretraining. Poor initialization can lead to longer training times and increased computational costs. OFA (Liu et al., 2023) method provides an effective initialization strategy. Building on this, HyperOFA introduces a hypernetwork-based approach to initialize new tokens. Experimental results show that HyperOFA consistently outperforms the random initialization baseline and performs on par with OFA, sometimes surpassing it and sometimes falling behind.
 
-[Check the paper here](tbd)
+[Check the paper here](report/HyperOFA.pdf)
 
 ## File Structure
 
